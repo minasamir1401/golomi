@@ -108,3 +108,15 @@ def get_history(limit=168): # 1 week if hourly, but we do 10 mins now.
     except Exception as e:
         logger.error(f"Error getting history: {e}")
         return []
+
+def get_history_count():
+    try:
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute('SELECT COUNT(*) FROM snapshots')
+        count = c.fetchone()[0]
+        conn.close()
+        return count
+    except Exception as e:
+        logger.error(f"Error getting history count: {e}")
+        return 0

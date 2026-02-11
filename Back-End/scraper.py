@@ -433,6 +433,49 @@ class GoldEraScraper:
             logger.info(f"✓ Seeded {inserted_count} historical snapshots.")
             return True
 
+    async def run_task_with_status(self, scraper_id, coro):
+        self.cache["scraper_status"][scraper_id] = self.cache["scraper_status"].get(scraper_id, {})
+        self.cache["scraper_status"][scraper_id].update({
+            "status": "Running", 
+            "last_start": datetime.now().isoformat()
+        })
+        
+        start_time = datetime.now()
+        try:
+            result = await coro
+            duration = (datetime.now() - start_time).total_seconds()
+            
+            # success criteria: result is True, or result is truthy data, or result is None (for void functions that logged success internally)
+            # strictly speaking, scrape_prices returns boolean. scrape_country returns data. scrape_gold_live_all returns None.
+            is_success = result is not False and result is not None
+            
+            # Special case for gold_live which returns None
+            if scraper_id == "gold_live": is_success = True 
+            # Special case for countries which returns None on fail
+            if scraper_id.startswith("country_") and result is None: is_success = False
+
+            if is_success:
+                self.cache["scraper_status"][scraper_id].update({
+                    "status": "Idle", 
+                    "last_success": datetime.now().isoformat(),
+                    "last_duration": duration,
+                    "error": None
+                })
+            else:
+                 self.cache["scraper_status"][scraper_id].update({
+                     "status": "Failed", 
+                     "last_error": "No data returned",
+                     "last_duration": duration
+                 })
+        except Exception as e:
+            duration = (datetime.now() - start_time).total_seconds()
+            self.cache["scraper_status"][scraper_id].update({
+                "status": "Error", 
+                "last_error": str(e),
+                "last_duration": duration
+            })
+            logger.error(f"Error in {scraper_id}: {e}")
+
     async def run_periodic_scrape(self):
         """Dynamic scraping loop controlled by database settings."""
         while True:
@@ -445,25 +488,41 @@ class GoldEraScraper:
             logger.info(f"🚀 Scraping cycle started (Interval: {scrape_interval}s)...")
             start_time = datetime.now()
             
+            self.cache["scraper_status"] = self.cache.get("scraper_status", {})
+
             async with aiohttp.ClientSession() as session:
                 tasks = []
                 if "gold_era" in enabled_scrapers:
-                    tasks.append(self.scrape_prices(session))
+                    tasks.append(self.run_task_with_status("gold_era", self.scrape_prices(session)))
                 if "isagha" in enabled_scrapers:
-                    tasks.append(self.scrape_isagha_prices(session))
+                    tasks.append(self.run_task_with_status("isagha", self.scrape_isagha_prices(session)))
                 if "sarf_today" in enabled_scrapers:
-                    tasks.append(self.scrape_sarf_today_currencies(session))
-                    tasks.append(self.scrape_sarf_today_gold(session))
+                    # Group sarf tasks? or track separately. Separately is better for granularity but user treated "sarf_today" as one toggle.
+                    # We will wrap them in a single async def for status tracking
+                    async def sarf_wrapper():
+                        r1 = await self.scrape_sarf_today_currencies(session)
+                        r2 = await self.scrape_sarf_today_gold(session)
+                        return r1 or r2
+                    tasks.append(self.run_task_with_status("sarf_today", sarf_wrapper()))
                 if "gold_live" in enabled_scrapers:
-                    tasks.append(self.scrape_gold_live_all(session))
+                    tasks.append(self.run_task_with_status("gold_live", self.scrape_gold_live_all(session)))
                 
                 if "countries" in enabled_scrapers:
-                    countries = ["egypt", "saudi-arabia", "united-arab-emirates", "kuwait", "qatar", "bahrain", "oman", "jordan", "iraq"]
-                    for c in countries:
-                        async def fetch_country(slug):
-                            data = await self.scrape_country_prices(session, slug)
-                            if data: self.cache["countries"][slug] = data
-                        tasks.append(fetch_country(c))
+                    countries = ["egypt", "saudi-arabia", "united-arab-emirates", "kuwait", "qatar", "bahrain", "oman", "jordan", "iraq", "palestine", "lebanon", "yemen", "algeria", "morocco"]
+                    
+                    # Track countries as a group logic or individual? 
+                    # Let's do a group wrapper for the "countries" status, but maybe log individuals internally if needed.
+                    # For admin simple view, one status for "Arab Countries" is enough.
+                    async def countries_wrapper():
+                        success_count = 0
+                        for c in countries:
+                            data = await self.scrape_country_prices(session, c)
+                            if data: 
+                                self.cache["countries"][c] = data
+                                success_count += 1
+                        return success_count > 0
+                    
+                    tasks.append(self.run_task_with_status("countries", countries_wrapper()))
 
                 if tasks:
                     await asyncio.gather(*tasks)

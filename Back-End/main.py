@@ -112,8 +112,9 @@ async def update_admin_setting(setting: SettingUpdate):
 @app.get("/api/admin/stats")
 async def get_admin_stats():
     return {
-        "cache_last_updated": scraper.cache["last_updated"],
-        "db_snapshots_count": len(database.get_history(limit=999999))
+        "cache_last_updated": scraper.cache.get("last_updated"),
+        "db_snapshots_count": database.get_history_count(),
+        "scraper_status": scraper.cache.get("scraper_status", {})
     }
 
 @app.get("/api/admin/raw-cache")
