@@ -1,20 +1,14 @@
-// API Intelligence Layer
 const getBaseUrl = (): string => {
-    // 1. Client-side: Absolute zero-config. Uses current browser domain/protocol.
+    // 1. Client-side: Uses relative proxy path
     if (typeof window !== "undefined") return "/api";
 
-    // 2. Server-side: Intelligent host discovery
-    // Priority 1: Manual override via Env
-    if (process.env.NEXT_PUBLIC_API_URL) {
-        const url = process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
-        return url.endsWith("/api") ? url : `${url}/api`;
-    }
+    // 2. Server-side: Must use absolute URL to backend
+    // In local dev, backend is at port 8000
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
-    // Priority 2: Standard Cloud/Vercel Auto-detection
-    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}/api`;
-
-    // Priority 3: Local Dev Fallback
-    return "http://127.0.0.1:8000/api";
+    // Ensure we return the absolute URL with /api prefix for internal fetches
+    const cleanBase = backendUrl.replace(/\/$/, "");
+    return `${cleanBase}/api`;
 };
 
 export const API_URL = getBaseUrl();
@@ -568,7 +562,7 @@ export async function getNews(category?: string, page: number = 1, limit: number
         // Category filtering is not yet implemented in backend, so we might want to skip sending it or send it for future compat
         // if (category) url += `&category=${encodeURIComponent(category)}`;
 
-        const response = await fetch(url, { next: { revalidate: 60 } });
+        const response = await fetch(url, { next: { revalidate: 10 } });
         if (!response.ok) throw new Error(`Failed to fetch news from ${url}`);
 
         const data = await response.json();
@@ -589,11 +583,26 @@ export async function getArticles(status: string = 'published', page: number = 1
 
 export async function getArticle(slug: string) {
     try {
-        const response = await fetch(`${API_URL}/v1/news/${slug}`, { next: { revalidate: 300 } });
-        if (!response.ok) throw new Error("Failed to fetch article");
-        return await response.json();
+        // Try exact slug
+        const response = await fetch(`${API_URL}/v1/news/${slug}`, {
+            cache: 'no-store',
+            headers: { "Accept": "application/json" }
+        });
+
+        if (response.ok) return await response.json();
+
+        // If not found, try decoded slug (in case of Arabic/Encoded URLs)
+        const decodedSlug = decodeURIComponent(slug);
+        if (decodedSlug !== slug) {
+            const retryResponse = await fetch(`${API_URL}/v1/news/${encodeURIComponent(decodedSlug)}`, { cache: 'no-store' });
+            if (retryResponse.ok) return await retryResponse.json();
+        }
+
+        // If still not found, throw error to trigger client-side fallback if needed
+        console.warn(`[getArticle] Article not found: ${slug} (Status: ${response.status})`);
+        return null;
     } catch (error) {
-        console.error(`Error fetching article ${slug}:`, error);
+        console.error(`[getArticle] Critical error fetching ${slug}:`, error);
         return null;
     }
 }
@@ -601,7 +610,7 @@ export async function getArticle(slug: string) {
 export async function createNewsArticle(payload: any) {
     try {
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_URL}/v1/news`, {
+        const response = await fetch(`${API_URL}/v1/news/`, {
             method: 'POST',
             headers,
             body: JSON.stringify(payload)
@@ -807,10 +816,10 @@ export async function triggerGoldScrape() {
     }
 }
 
-export async function triggerCurrencyScrape(from: string = "USD", to: string = "EGP") {
+export async function triggerCurrencyScrape() {
     try {
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_URL}/currency/scrape/${from}/${to}`, {
+        const response = await fetch(`${API_URL}/admin/scrape/currency`, {
             method: 'POST',
             headers
         });
@@ -818,11 +827,9 @@ export async function triggerCurrencyScrape(from: string = "USD", to: string = "
         return await response.json();
     } catch (error) {
         console.error("Error triggering currency scrape:", error);
-        return null;
+        return { status: "error" };
     }
 }
-
-// Currency Source Management
 
 export interface CurrencySource {
     id: number;
@@ -836,7 +843,7 @@ export interface CurrencySource {
 export async function getCurrencySources(): Promise<CurrencySource[]> {
     try {
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_URL}/currency/sources`, { headers });
+        const response = await fetch(`${API_URL}/admin/currency-sources`, { headers });
         if (!response.ok) throw new Error("Failed to fetch currency sources");
         return await response.json();
     } catch (error) {
@@ -845,20 +852,13 @@ export async function getCurrencySources(): Promise<CurrencySource[]> {
     }
 }
 
-export async function updateCurrencySource(
-    sourceName: string,
-    isEnabled?: boolean,
-    priority?: number
-): Promise<CurrencySource | null> {
+export async function updateCurrencySource(sourceName: string, isEnabled?: boolean, priority?: number): Promise<CurrencySource | null> {
     try {
-        const params = new URLSearchParams();
-        if (isEnabled !== undefined) params.append("is_enabled", String(isEnabled));
-        if (priority !== undefined) params.append("priority", String(priority));
-
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_URL}/currency/sources/${sourceName}/?${params}`, {
-            method: 'PUT',
-            headers
+        const response = await fetch(`${API_URL}/admin/currency-sources/${sourceName}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ is_enabled: isEnabled, priority })
         });
         if (!response.ok) throw new Error("Failed to update currency source");
         return await response.json();
@@ -868,18 +868,104 @@ export async function updateCurrencySource(
     }
 }
 
-export async function triggerFullCurrencyScrape() {
+export async function reorderCurrencySources(order: string[]) {
     try {
         const headers = getAuthHeaders();
-        const response = await fetch(`${API_URL}/currency/trigger-scrape`, {
+        const response = await fetch(`${API_URL}/admin/currency-sources/reorder`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(order)
+        });
+        if (!response.ok) throw new Error("Failed to reorder currency sources");
+        return await response.json();
+    } catch (error) {
+        console.error("Error reordering currency sources:", error);
+        return { status: "error" };
+    }
+}
+
+export async function testCurrencySource(sourceName: string) {
+    try {
+        const headers = getAuthHeaders();
+        const response = await fetch(`${API_URL}/admin/test-currency-source/${sourceName}`, {
             method: 'POST',
             headers
         });
-        if (!response.ok) throw new Error("Failed to trigger currency scrape");
+        if (!response.ok) throw new Error("Failed to test currency source");
         return await response.json();
     } catch (error) {
-        console.error("Error triggering full currency scrape:", error);
-        return { success: false, error: String(error) };
+        console.error("Error testing currency source:", error);
+        return { status: "error" };
+    }
+}
+
+// ============= Silver Source Management APIs =============
+
+export interface SilverSource {
+    id: number;
+    source_name: string;
+    display_name: string;
+    is_enabled: boolean;
+    priority: number;
+    last_updated: string | null;
+}
+
+export async function getSilverSources(): Promise<SilverSource[]> {
+    try {
+        const headers = getAuthHeaders();
+        const response = await fetch(`${API_URL}/admin/silver-sources`, { headers });
+        if (!response.ok) throw new Error("Failed to fetch silver sources");
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching silver sources:", error);
+        return [];
+    }
+}
+
+export async function updateSilverSource(sourceName: string, isEnabled?: boolean, priority?: number): Promise<SilverSource | null> {
+    try {
+        const headers = getAuthHeaders();
+        const response = await fetch(`${API_URL}/admin/silver-sources/${sourceName}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ is_enabled: isEnabled, priority })
+        });
+        if (!response.ok) throw new Error("Failed to update silver source");
+        return await response.json();
+    } catch (error) {
+        console.error("Error updating silver source:", error);
+        return null;
+    }
+}
+
+export async function reorderSilverSources(order: string[]) {
+    try {
+        const headers = getAuthHeaders();
+        const response = await fetch(`${API_URL}/admin/silver-sources/reorder`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(order)
+        });
+        if (!response.ok) throw new Error("Failed to reorder silver sources");
+        return await response.json();
+    } catch (error) {
+        console.error("Error reordering silver sources:", error);
+        return { status: "error" };
+    }
+}
+
+export async function testSilverSource(sourceName: string) {
+    try {
+        const headers = getAuthHeaders();
+        const response = await fetch(`${API_URL}/admin/test-silver-source/${sourceName}`, {
+            method: 'POST',
+            headers
+        });
+        if (!response.ok) throw new Error("Failed to test silver source");
+        return await response.json();
+    } catch (error) {
+        console.error("Error testing silver source:", error);
+        return { status: "error" };
     }
 }
 

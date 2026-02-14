@@ -17,10 +17,38 @@ interface ArticleClientProps {
 export default function ArticleClient({ article: initialArticle, slug }: ArticleClientProps) {
     const { isRTL } = useLanguage();
     const [article, setArticle] = useState<any>(initialArticle);
+    const [loading, setLoading] = useState(!initialArticle);
 
-    // If we didn't get the article from server (error or fallback), we might want to fetch it?
-    // But for SEO, we really want it passed from server. 
-    // We will assume it's passed or handled by server.
+    useEffect(() => {
+        // Only fetch if we don't have the article and we have a slug
+        if (!article && slug) {
+            const fetchArticle = async () => {
+                setLoading(true);
+                try {
+                    const { getArticle } = await import("@/lib/api");
+                    const data = await getArticle(slug);
+                    if (data) {
+                        setArticle(data);
+                    }
+                } catch (err) {
+                    console.error("Client fallback fetch failed:", err);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchArticle();
+        } else if (article) {
+            setLoading(false);
+        }
+    }, [slug, initialArticle]);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="h-10 w-10 border-4 border-gold-500/20 border-t-gold-500 rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     if (!article) {
         return (
@@ -31,6 +59,7 @@ export default function ArticleClient({ article: initialArticle, slug }: Article
                         <Bell className="h-10 w-10 text-slate-300 dark:text-[#1E293B]" />
                     </div>
                     <h1 className="text-2xl font-black mb-4">المقال غير موجود</h1>
+                    <p className="text-slate-500 mb-8 font-bold">عذراً، لم نتمكن من العثور على الخبر الذي تبحث عنه.</p>
                     <Link href="/news" className="text-gold-500 font-bold flex items-center justify-center gap-2 hover:underline">
                         <ArrowRight className="h-4 w-4" />
                         <span>العودة للأخبار</span>
@@ -135,7 +164,7 @@ export default function ArticleClient({ article: initialArticle, slug }: Article
                         prose-strong:text-slate-900 dark:prose-strong:text-gold-500
                         prose-img:rounded-3xl prose-img:border prose-img:border-slate-200 dark:prose-img:border-white/10
                     ">
-                        {article.content_json ? (
+                        {article.content_json && article.content_json !== "null" ? (
                             <div className="space-y-8">
                                 {(() => {
                                     try {
@@ -143,7 +172,7 @@ export default function ArticleClient({ article: initialArticle, slug }: Article
                                             ? JSON.parse(article.content_json)
                                             : article.content_json;
 
-                                        if (!Array.isArray(blocks)) return <div dangerouslySetInnerHTML={{ __html: article.content }} />;
+                                        if (!Array.isArray(blocks)) return <div dangerouslySetInnerHTML={{ __html: article.content }} className="font-cairo" />;
 
                                         return blocks.map((block: any, idx: number) => {
                                             switch (block.type) {
@@ -161,7 +190,7 @@ export default function ArticleClient({ article: initialArticle, slug }: Article
                                             }
                                         });
                                     } catch (e) {
-                                        return <div dangerouslySetInnerHTML={{ __html: article.content }} />;
+                                        return <div dangerouslySetInnerHTML={{ __html: article.content }} className="font-cairo" />;
                                     }
                                 })()}
                             </div>

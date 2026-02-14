@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCurrencySources, updateCurrencySource, triggerFullCurrencyScrape, type CurrencySource } from "@/lib/api";
+import { getCurrencySources, updateCurrencySource, triggerCurrencyScrape, type CurrencySource } from "@/lib/api";
 import { motion } from "framer-motion";
 import { Globe, RefreshCw, Power, Save, Zap, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,8 +35,17 @@ export default function CurrencySourcesManagement() {
     const handleScrape = async () => {
         setScraping(true);
         setScrapeResult(null);
-        const result = await triggerFullCurrencyScrape();
-        setScrapeResult(result);
+        const result = await triggerCurrencyScrape();
+
+        // Map the new response format {"status": "success", "count": X} 
+        // to what the component expects { success: boolean, rates_saved: number }
+        const mappedResult = {
+            success: result.status === "success",
+            rates_saved: result.count || 0,
+            error: result.message || (result.status === "error" ? "Unexpected error" : null)
+        };
+
+        setScrapeResult(mappedResult);
         setScraping(false);
     };
 

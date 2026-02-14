@@ -75,6 +75,14 @@ export default function AddNewsPage() {
             return;
         }
 
+        // 🛡️ Security Check: Ensure user is logged in
+        const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        if (!token) {
+            alert("⚠️ يجب تسجيل الدخول أولاً للمتابعة.");
+            router.push('/admin-login');
+            return;
+        }
+
         setLoading(true);
         try {
             const payload = {
@@ -91,13 +99,14 @@ export default function AddNewsPage() {
                 status
             };
 
+            console.log('📤 Sending article...');
             await createNewsArticle(payload);
 
-            alert("تم نشر الخبر بنجاح!");
+            alert("✅ تم نشر الخبر بنجاح!");
             router.push("/news");
         } catch (error: any) {
-            console.error(error);
-            alert(error.message || "حدث خطأ أثناء النشر.");
+            console.error('❌ Error creating article:', error);
+            alert(`❌ خطأ: ${error.message || "حدث خطأ أثناء النشر"}`);
         } finally {
             setLoading(false);
         }

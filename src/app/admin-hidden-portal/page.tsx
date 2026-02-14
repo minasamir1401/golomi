@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getAdminSettings, updateAdminSetting, getAdminStats, seedHistoricalArchive, getRawCache, updateManualPrice, getManualPrices, getNews, deleteNewsArticle, triggerNewsScrape, testNewsSources, triggerGoldScrape, triggerCurrencyScrape, getQAItems, createQAItem, updateQAItem, deleteQAItem, getMe, getUsers, createUser, updateUser, deleteUser, changePassword } from "@/lib/api";
+import { getAdminSettings, updateAdminSetting, getAdminStats, seedHistoricalArchive, getRawCache, updateManualPrice, getManualPrices, getNews, deleteNewsArticle, triggerNewsScrape, testNewsSources, triggerGoldScrape, triggerCurrencyScrape, getQAItems, createQAItem, updateQAItem, deleteQAItem, getMe, getUsers, createUser, updateUser, deleteUser, changePassword, getCurrencySources, updateCurrencySource, reorderCurrencySources, testCurrencySource, getSilverSources, updateSilverSource, reorderSilverSources, testSilverSource } from "@/lib/api";
 
 import { Navbar } from "@/components/navbar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,7 +18,7 @@ export default function AdminPortal() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState<string | null>(null);
     const [seeding, setSeeding] = useState(false);
-    const [activeTab, setActiveTab] = useState<"config" | "prices" | "news" | "qa" | "live" | "raw" | "banks" | "sources" | "users" | "security">("config");
+    const [activeTab, setActiveTab] = useState<"config" | "prices" | "news" | "qa" | "live" | "raw" | "sources" | "users" | "security">("config");
 
     // Auth & User States
     const [currentUser, setCurrentUser] = useState<any>(null);
@@ -60,16 +60,25 @@ export default function AdminPortal() {
 
 
     const [sourceOrder, setSourceOrder] = useState<string[]>([]);
+    const [currencySources, setCurrencySources] = useState<any[]>([]);
+    const [currencyTestResults, setCurrencyTestResults] = useState<any>({});
+    const [silverSources, setSilverSources] = useState<any[]>([]);
+    const [silverTestResults, setSilverTestResults] = useState<any>({});
     const [newsTestResults, setNewsTestResults] = useState<any>(null);
     const [testingNews, setTestingNews] = useState(false);
-
-
 
     const [isInitialized, setIsInitialized] = useState(false);
 
     const fetchAll = async (isInitial = false) => {
         try {
             if (isInitial) {
+                // 🛡️ Pre-auth check: check storage first
+                const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+                if (!token) {
+                    router.push("/admin-login");
+                    return;
+                }
+
                 const me = await getMe();
                 if (me) {
                     setCurrentUser(me);
@@ -80,12 +89,17 @@ export default function AdminPortal() {
                 }
             }
 
-            const [sData, stData, rData, mData] = await Promise.all([
+            const [sData, stData, rData, mData, cSources, sSources] = await Promise.all([
                 (isInitial || !isInitialized) ? getAdminSettings() : Promise.resolve(null),
                 getAdminStats(),
                 (activeTab === "raw" || activeTab === "live") ? getRawCache() : Promise.resolve(null),
-                (isInitial || !isInitialized) ? getManualPrices() : Promise.resolve(null)
+                (isInitial || !isInitialized) ? getManualPrices() : Promise.resolve(null),
+                getCurrencySources(),
+                getSilverSources()
             ]);
+
+            if (cSources) setCurrencySources(cSources);
+            if (sSources) setSilverSources(sSources);
 
             if (sData) {
                 setSettings(sData);
@@ -364,6 +378,63 @@ export default function AdminPortal() {
         }
     };
 
+    const toggleCurrencySource = async (name: string, currentStatus: boolean) => {
+        setSaving(name);
+        await updateCurrencySource(name, !currentStatus);
+        setCurrencySources(prev => prev.map(s => s.source_name === name ? { ...s, is_enabled: !currentStatus } : s));
+        setSaving(null);
+    };
+
+    const moveCurrencySource = async (index: number, direction: 'up' | 'down') => {
+        const newSources = [...currencySources];
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex >= 0 && newIndex < newSources.length) {
+            [newSources[index], newSources[newIndex]] = [newSources[newIndex], newSources[index]];
+            setCurrencySources(newSources);
+            // Auto-save the new order
+            const names = newSources.map(s => s.source_name);
+            await reorderCurrencySources(names);
+        }
+    };
+
+    const testSource = async (name: string) => {
+        setCurrencyTestResults((prev: any) => ({ ...prev, [name]: { loading: true } }));
+        try {
+            const res = await testCurrencySource(name);
+            setCurrencyTestResults((prev: any) => ({ ...prev, [name]: { loading: false, result: res } }));
+        } catch (e) {
+            setCurrencyTestResults((prev: any) => ({ ...prev, [name]: { loading: false, error: String(e) } }));
+        }
+    };
+
+    const toggleSilverSource = async (name: string, currentStatus: boolean) => {
+        setSaving(name + "_silver");
+        await updateSilverSource(name, !currentStatus);
+        setSilverSources(prev => prev.map(s => s.source_name === name ? { ...s, is_enabled: !currentStatus } : s));
+        setSaving(null);
+    };
+
+    const moveSilverSource = async (index: number, direction: 'up' | 'down') => {
+        const newSources = [...silverSources];
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex >= 0 && newIndex < newSources.length) {
+            [newSources[index], newSources[newIndex]] = [newSources[newIndex], newSources[index]];
+            setSilverSources(newSources);
+            const names = newSources.map(s => s.source_name);
+            await reorderSilverSources(names);
+        }
+    };
+
+    const testSilverSourceHandler = async (name: string) => {
+        setSilverTestResults((prev: any) => ({ ...prev, [name]: { loading: true } }));
+        try {
+            const res = await testSilverSource(name);
+            setSilverTestResults((prev: any) => ({ ...prev, [name]: { loading: false, result: res } }));
+        } catch (e) {
+            setSilverTestResults((prev: any) => ({ ...prev, [name]: { loading: false, error: String(e) } }));
+        }
+    };
+
 
 
     if (loading) return <div className="min-h-screen flex items-center justify-center font-black animate-pulse text-gold-600">جاري الدخول إلى بوابة التحكم...</div>;
@@ -382,120 +453,130 @@ export default function AdminPortal() {
                             <Shield className="h-6 w-6 sm:h-8 sm:w-8" />
                         </div>
                         <div>
-                            <h1 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight">لوحة التحكم السرية</h1>
-                            <p className="text-[10px] sm:text-sm text-slate-500 dark:text-slate-400 font-bold">إدارة عمليات الاستخراج والإعدادات العامة</p>
+                            <h1 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight">بوابة الإدارة الذكية</h1>
+                            <p className="text-[10px] sm:text-sm text-slate-500 dark:text-slate-400 font-bold">تحكم كامل في الأسعار، المصادر، والمحتوى الإخباري</p>
                         </div>
                     </div>
 
+                    <button
+                        onClick={handleLogout}
+                        className="h-10 px-4 sm:h-12 sm:px-6 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 flex items-center gap-2 transition-all font-black text-xs"
+                    >
+                        <LogOut className="h-4 w-4" />
+                        تسجيل الخروج
+                    </button>
                 </div>
 
-                <div className="flex bg-white dark:bg-slate-900 p-1 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap flex-1 mx-4">
-                    <button
-                        onClick={() => setActiveTab("config")}
-                        className={cn("px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black transition-all flex items-center gap-2", activeTab === "config" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
-                    >
-                        <Settings className="h-4 w-4" />
-                        الإعدادات
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("security")}
-                        className={cn("px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black transition-all flex items-center gap-2", activeTab === "security" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
-                    >
-                        <ShieldCheck className="h-4 w-4" />
-                        الأمان والمدراء
-                    </button>
+                {/* Main Detailed Navigation - Prioritized */}
+                <div className="flex bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-x-auto no-scrollbar mb-8">
                     <button
                         onClick={() => setActiveTab("prices")}
-                        className={cn("px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black transition-all flex items-center gap-2", activeTab === "prices" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
+                        className={cn("px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap", activeTab === "prices" ? "bg-gold-500 text-slate-900 shadow-lg shadow-gold-500/20" : "text-slate-500 hover:bg-slate-50")}
                     >
                         <Coins className="h-4 w-4" />
-                        الأسعار
+                        التحكم بالأسعار
                     </button>
                     <Link
                         href="/admin-hidden-portal/news"
-                        className={cn("px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black transition-all flex items-center gap-2 text-slate-500 hover:bg-slate-50")}
+                        className={cn("px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap text-slate-500 hover:bg-slate-50")}
                     >
                         <Newspaper className="h-4 w-4" />
-                        الأخبار
+                        إدارة الأخبار
                     </Link>
                     <button
+                        onClick={() => setActiveTab("sources")}
+                        className={cn("px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap", activeTab === "sources" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
+                    >
+                        <Globe className="h-4 w-4" />
+                        مصادر البيانات
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("live")}
+                        className={cn("px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap", activeTab === "live" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
+                    >
+                        <Activity className="h-4 w-4" />
+                        مراقبة الحالة
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("config")}
+                        className={cn("px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap", activeTab === "config" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
+                    >
+                        <Settings className="h-4 w-4" />
+                        إرشادات عامة
+                    </button>
+                    <button
                         onClick={() => setActiveTab("qa")}
-                        className={cn("px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black transition-all flex items-center gap-2", activeTab === "qa" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
+                        className={cn("px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap", activeTab === "qa" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
                     >
                         <HelpCircle className="h-4 w-4" />
                         الأسئلة
                     </button>
                     <button
-                        onClick={() => setActiveTab("banks")}
-                        className={cn("px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black transition-all flex items-center gap-2", activeTab === "banks" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
+                        onClick={() => setActiveTab("security")}
+                        className={cn("px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap", activeTab === "security" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
                     >
-                        <Database className="h-4 w-4" />
-                        البنوك
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("sources")}
-                        className={cn("px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black transition-all flex items-center gap-2", activeTab === "sources" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
-                    >
-                        <Globe className="h-4 w-4" />
-                        المصادر
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("live")}
-                        className={cn("px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black transition-all flex items-center gap-2", activeTab === "live" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
-                    >
-                        <Activity className="h-4 w-4" />
-                        الحالة
+                        <ShieldCheck className="h-4 w-4" />
+                        الأمان والمدراء
                     </button>
                     <button
                         onClick={() => setActiveTab("raw")}
-                        className={cn("px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-black transition-all flex items-center gap-2", activeTab === "raw" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
+                        className={cn("px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap", activeTab === "raw" ? "bg-slate-900 text-white shadow-lg" : "text-slate-500 hover:bg-slate-50")}
                     >
                         <Code2 className="h-4 w-4" />
                         RAW
                     </button>
                 </div>
 
-                <button
-                    onClick={handleLogout}
-                    className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20 flex items-center justify-center transition-all flex-shrink-0"
-                    title="تسجيل الخروج"
-                >
-                    <LogOut className="h-5 w-5 sm:h-6 sm:w-6" />
-                </button>
-
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
-                    <div className="glass-card p-4 sm:p-6 bg-white dark:bg-slate-900/50 border-slate-100 dark:border-white/5">
-                        <div className="flex items-center gap-3 mb-3 sm:mb-4 text-slate-400">
-                            <Clock className="h-4 sm:h-5 w-4 sm:w-5" />
-                            <span className="text-[10px] sm:text-xs font-black">آخر تحديث مباشر</span>
+                {/* Detailed Summary Row - IMPORTANT STUFF */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
+                    <div className="glass-card p-4 sm:p-5 bg-white dark:bg-slate-900 border-l-4 border-l-gold-500">
+                        <div className="flex items-center gap-3 mb-2 text-slate-400">
+                            <Clock className="h-4 w-4" />
+                            <span className="text-[10px] font-black uppercase">آخر تحديث للذهب</span>
                         </div>
-                        <div className="text-lg sm:text-xl font-black text-slate-900 dark:text-white truncate">
-                            {new Date(stats?.cache_last_updated).toLocaleTimeString("ar-EG")}
+                        <div className="text-xl font-black text-slate-900 dark:text-white">
+                            {stats?.cache_last_updated ? new Date(stats.cache_last_updated).toLocaleTimeString("ar-EG") : "---"}
+                        </div>
+                        <p className="text-[9px] text-slate-500 mt-1 font-bold">المصدر النشط: {stats?.active_source || "تلقائي"}</p>
+                    </div>
+
+                    <div className="glass-card p-4 sm:p-5 bg-white dark:bg-slate-900 border-l-4 border-l-blue-500">
+                        <div className="flex items-center gap-3 mb-2 text-slate-400">
+                            <Newspaper className="h-4 w-4" />
+                            <span className="text-[10px] font-black uppercase">إجمالي الأخبار</span>
+                        </div>
+                        <div className="text-xl font-black text-slate-900 dark:text-white">
+                            {stats?.total_articles || 0} مقال
+                        </div>
+                        <p className="text-[9px] text-slate-500 mt-1 font-bold">تم نشر جميع المقالات بنجاح</p>
+                    </div>
+
+                    <div className="glass-card p-4 sm:p-5 bg-white dark:bg-slate-900 border-l-4 border-l-emerald-500">
+                        <div className="flex items-center gap-3 mb-2 text-slate-400">
+                            <Database className="h-4 w-4" />
+                            <span className="text-[10px] font-black uppercase">سجلات الأرشيف</span>
+                        </div>
+                        <div className="text-xl font-black text-slate-900 dark:text-white">
+                            {stats?.db_snapshots_count || 0} لقطة
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                            <button onClick={handleSeed} disabled={seeding} className="text-[9px] font-black text-emerald-600 hover:underline flex items-center gap-1">
+                                <DatabaseBackup className={cn("h-3 w-3", seeding && "animate-spin")} />
+                                {seeding ? "جاري السحب..." : "تحديث الأرشيف"}
+                            </button>
                         </div>
                     </div>
-                    <div className="glass-card p-4 sm:p-6 bg-white dark:bg-slate-900/50 border-slate-100 dark:border-white/5">
-                        <div className="flex items-center gap-3 mb-3 sm:mb-4 text-slate-400">
-                            <Database className="h-4 sm:h-5 w-4 sm:w-5" />
-                            <span className="text-[10px] sm:text-xs font-black">حجم الأرشيف</span>
+
+                    <div className="glass-card p-4 sm:p-5 bg-white dark:bg-slate-900 border-l-4 border-l-purple-500">
+                        <div className="flex items-center gap-3 mb-2 text-slate-400">
+                            <Activity className="h-4 w-4" />
+                            <span className="text-[10px] font-black uppercase">استقرار النظام</span>
                         </div>
-                        <div className="text-lg sm:text-xl font-black text-gold-600">
-                            {stats?.db_snapshots_count} لقطة مخزنة
+                        <div className="text-xl font-black text-emerald-500 flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                            متصل الآن
                         </div>
-                    </div>
-                    <div className="glass-card p-4 sm:p-6 bg-white dark:bg-slate-900/50 border-white/5 border-l-4 border-l-emerald-500 sm:col-span-2 lg:col-span-1">
-                        <div className="flex items-center gap-3 mb-3 sm:mb-4 text-slate-400">
-                            <DatabaseBackup className="h-4 sm:h-5 w-4 sm:w-5" />
-                            <span className="text-[10px] sm:text-xs font-black">عمليات الصيانة</span>
-                        </div>
-                        <button
-                            onClick={handleSeed}
-                            disabled={seeding}
-                            className="text-[10px] sm:text-xs font-black text-emerald-600 hover:underline flex items-center gap-2"
-                        >
-                            <RefreshCw className={cn("h-3 w-3", seeding && "animate-spin")} />
-                            {seeding ? "جاري سحب التاريخ..." : "سحب البيانات التاريخية (Archive)"}
-                        </button>
+                        <p className="text-[9px] text-slate-500 mt-1 font-bold">الباك-إند والسكربتات تعمل</p>
                     </div>
                 </div>
 
@@ -971,6 +1052,206 @@ export default function AdminPortal() {
                                                 </div>
                                             );
                                         })}
+                                    </div>
+                                </section>
+
+                                <section className="mb-8 sm:mb-12">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <Activity className="h-5 sm:h-6 w-5 sm:w-6 text-blue-500" />
+                                            <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">إدارة مصادر العملات</h2>
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                setSaving("currency_scrape");
+                                                const res = await triggerCurrencyScrape();
+                                                setSaving(null);
+                                                if (res.status === "success") {
+                                                    alert(`تم تحديث ${res.count} سعر بنجاح!`);
+                                                    fetchAll();
+                                                } else {
+                                                    alert("فشل التحديث. حاول مرة أخرى.");
+                                                }
+                                            }}
+                                            disabled={saving === "currency_scrape"}
+                                            className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                        >
+                                            <RefreshCw className={cn("h-3 w-3", saving === "currency_scrape" && "animate-spin")} />
+                                            {saving === "currency_scrape" ? "جاري التحديث..." : "تحديث العملات الآن"}
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {currencySources.map((source, index) => (
+                                            <div key={source.source_name} className={cn(
+                                                "glass-card p-5 bg-white dark:bg-slate-900/80 border-slate-100 dark:border-white/5 relative",
+                                                index === 0 && "border-2 border-blue-500/30 ring-1 ring-blue-500/10 shadow-lg shadow-blue-500/5"
+                                            )}>
+                                                {index === 0 && (
+                                                    <div className="absolute -top-3 -right-3 px-3 py-1 bg-blue-500 text-white text-[9px] font-black rounded-full shadow-lg z-10">
+                                                        المصدر الأساسي (Primary)
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={cn("h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-blue-500")}>
+                                                            <Globe className="h-5 w-5" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="font-black text-sm text-slate-900 dark:text-slate-100">{source.display_name}</h3>
+                                                            <p className="text-[10px] text-slate-400 font-mono tracking-tighter">{source.source_name}.com</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex flex-col gap-1">
+                                                            <button
+                                                                onClick={() => moveCurrencySource(index, 'up')}
+                                                                disabled={index === 0}
+                                                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-20 translate-y-0.5"
+                                                            >
+                                                                <ArrowUp className="h-3 w-3" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => moveCurrencySource(index, 'down')}
+                                                                disabled={index === currencySources.length - 1}
+                                                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-20 -translate-y-0.5"
+                                                            >
+                                                                <ArrowDown className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-white/5 mb-3">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] text-slate-400 font-black uppercase">آخر تحديث</span>
+                                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                                                            {source.last_updated ? new Date(source.last_updated).toLocaleTimeString("ar-EG") : "لا يوجد"}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => testSource(source.source_name)}
+                                                        disabled={currencyTestResults[source.source_name]?.loading}
+                                                        className="h-7 px-3 bg-slate-900 dark:bg-slate-700 text-white rounded-md text-[9px] font-black hover:bg-blue-600 transition-colors"
+                                                    >
+                                                        {currencyTestResults[source.source_name]?.loading ? <RefreshCw className="h-3 w-3 animate-spin" /> : "فحص المصدر"}
+                                                    </button>
+                                                </div>
+
+                                                {currencyTestResults[source.source_name]?.result && (
+                                                    <div className={cn("mb-3 p-2 rounded-lg text-[9px] font-bold", currencyTestResults[source.source_name].result.status === "success" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-red-500/10 text-red-600 border border-red-500/20")}>
+                                                        {currencyTestResults[source.source_name].result.status === "success"
+                                                            ? `ناجح: ${currencyTestResults[source.source_name].result.count} سعر - ${currencyTestResults[source.source_name].result.duration.toFixed(2)}s`
+                                                            : `فشل: ${currencyTestResults[source.source_name].result.error || "خطأ غير معروف"}`
+                                                        }
+                                                    </div>
+                                                )}
+
+                                                <button
+                                                    onClick={() => toggleCurrencySource(source.source_name, source.is_enabled)}
+                                                    disabled={saving === source.source_name}
+                                                    className={cn(
+                                                        "w-full h-9 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2",
+                                                        source.is_enabled
+                                                            ? "bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"
+                                                            : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20"
+                                                    )}
+                                                >
+                                                    {saving === source.source_name ? <RefreshCw className="h-4 w-4 animate-spin" /> : (source.is_enabled ? <Power className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />)}
+                                                    {source.is_enabled ? "تعطيل المصدر" : "تفعيل المصدر"}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <section className="mb-8 sm:mb-12">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <Activity className="h-5 sm:h-6 w-5 sm:w-6 text-purple-500" />
+                                            <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white">إدارة مصادر الفضة</h2>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {silverSources.map((source, index) => (
+                                            <div key={source.source_name} className={cn(
+                                                "glass-card p-5 bg-white dark:bg-slate-900/80 border-slate-100 dark:border-white/5 relative",
+                                                index === 0 && "border-2 border-purple-500/30 ring-1 ring-purple-500/10 shadow-lg shadow-purple-500/5"
+                                            )}>
+                                                {index === 0 && (
+                                                    <div className="absolute -top-3 -right-3 px-3 py-1 bg-purple-500 text-white text-[9px] font-black rounded-full shadow-lg z-10">
+                                                        المصدر الأساسي (Primary)
+                                                    </div>
+                                                )}
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={cn("h-10 w-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-purple-500")}>
+                                                            <Globe className="h-5 w-5" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="font-black text-sm text-slate-900 dark:text-slate-100">{source.display_name}</h3>
+                                                            <p className="text-[10px] text-slate-400 font-mono tracking-tighter">{source.source_name}.com</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex flex-col gap-1">
+                                                            <button
+                                                                onClick={() => moveSilverSource(index, 'up')}
+                                                                disabled={index === 0}
+                                                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-20 translate-y-0.5"
+                                                            >
+                                                                <ArrowUp className="h-3 w-3" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => moveSilverSource(index, 'down')}
+                                                                disabled={index === silverSources.length - 1}
+                                                                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-20 -translate-y-0.5"
+                                                            >
+                                                                <ArrowDown className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-white/5 mb-3">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] text-slate-400 font-black uppercase">آخر تحديث</span>
+                                                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                                                            {source.last_updated ? new Date(source.last_updated).toLocaleTimeString("ar-EG") : "لا يوجد"}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => testSilverSourceHandler(source.source_name)}
+                                                        disabled={silverTestResults[source.source_name]?.loading}
+                                                        className="h-7 px-3 bg-slate-900 dark:bg-slate-700 text-white rounded-md text-[9px] font-black hover:bg-purple-600 transition-colors"
+                                                    >
+                                                        {silverTestResults[source.source_name]?.loading ? <RefreshCw className="h-3 w-3 animate-spin" /> : "فحص المصدر"}
+                                                    </button>
+                                                </div>
+
+                                                {silverTestResults[source.source_name]?.result && (
+                                                    <div className={cn("mb-3 p-2 rounded-lg text-[9px] font-bold", silverTestResults[source.source_name].result.status === "success" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-red-500/10 text-red-600 border border-red-500/20")}>
+                                                        {silverTestResults[source.source_name].result.status === "success"
+                                                            ? `ناجح: ${silverTestResults[source.source_name].result.count} سعر - ${silverTestResults[source.source_name].result.duration.toFixed(2)}s`
+                                                            : `فشل: ${silverTestResults[source.source_name].result.error || "خطأ غير معروف"}`
+                                                        }
+                                                    </div>
+                                                )}
+
+                                                <button
+                                                    onClick={() => toggleSilverSource(source.source_name, source.is_enabled)}
+                                                    disabled={saving === source.source_name + "_silver"}
+                                                    className={cn(
+                                                        "w-full h-9 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2",
+                                                        source.is_enabled
+                                                            ? "bg-red-500/10 text-red-600 border border-red-500/20 hover:bg-red-500/20"
+                                                            : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/20"
+                                                    )}
+                                                >
+                                                    {saving === source.source_name + "_silver" ? <RefreshCw className="h-4 w-4 animate-spin" /> : (source.is_enabled ? <Power className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />)}
+                                                    {source.is_enabled ? "تعطيل المصدر" : "تفعيل المصدر"}
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                 </section>
 
@@ -1505,24 +1786,6 @@ export default function AdminPortal() {
                                             {JSON.stringify(rawCache, null, 2)}
                                         </pre>
                                     </div>
-                                </div>
-                            </motion.div>
-                        )
-                    }
-
-                    {
-                        activeTab === "banks" && (
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} key="banks">
-                                <div className="glass-card p-6 bg-white dark:bg-slate-900/50 border-slate-100 dark:border-white/5">
-                                    {typeof window !== 'undefined' && (
-                                        <div>
-                                            {/* Dynamically import the component */}
-                                            {(() => {
-                                                const BanksManagement = require('@/components/admin/banks-management').default;
-                                                return <BanksManagement />;
-                                            })()}
-                                        </div>
-                                    )}
                                 </div>
                             </motion.div>
                         )

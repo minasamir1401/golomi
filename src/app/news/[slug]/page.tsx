@@ -3,12 +3,17 @@ import { Metadata } from 'next';
 import { getArticle } from "@/lib/api";
 import ArticleClient from './article-client';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+// Next.js 15+ requires params to be awaited
 interface PageProps {
-    params: { slug: string };
+    params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-    const article = await getArticle(params.slug);
+    const { slug } = await params;
+    const article = await getArticle(slug);
 
     if (!article) {
         return {
@@ -39,7 +44,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ArticlePage({ params }: PageProps) {
-    const article = await getArticle(params.slug);
+    const { slug } = await params;
+    const article = await getArticle(slug);
 
-    return <ArticleClient article={article} slug={params.slug} />;
+    return <ArticleClient article={article} slug={slug} />;
 }
