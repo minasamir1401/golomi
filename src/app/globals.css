@@ -1,0 +1,338 @@
+@import "tailwindcss";
+
+@theme {
+  --font-cairo: "Cairo", ui-sans-serif, system-ui;
+
+  /* NEW COORDINATED PALETTE */
+  --color-primary: #F16D34;
+  /* Deep Orange/Coral */
+  --color-primary-light: #FF986A;
+  /* Light Orange/Peach */
+  --color-navy: #161E54;
+  /* Dark Navy Blue */
+  --color-sky: #BBE0EF;
+  /* Light Blue/Sky */
+  --color-gold-muted: #B6B09F;
+  /* Muted Gold/Beige */
+
+  /* PREMIUM DARK PALETTE ACCENTS */
+  --color-premium-gold: #FFB800;
+  --color-premium-mint: #2DD4BF;
+  --color-premium-navy: #0B1121;
+  --color-premium-card: #151D2E;
+
+  /* OVERRIDE GOLD FOR BACKWARD COMPATIBILITY */
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #BBE0EF;
+  /* Mapping sky to light areas */
+  --color-gold-500: #F16D34;
+  /* Mapping primary orange to gold-500 */
+  --color-gold-600: #F16D34;
+
+  --variant-dark: (&:where(.dark, .dark *));
+}
+
+@keyframes float-slow {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+@keyframes float-fast {
+
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(-5deg);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float-fast 4s ease-in-out infinite;
+}
+
+:root {
+  --background: #FCF5EE;
+  --foreground: #161E54;
+  /* Navy for text */
+  --border-muted: #BBE0EF;
+  /* Sky for soft borders */
+  --border-strong: #161E54;
+}
+
+.dark {
+  --background: #0B1121;
+  /* Deepest Navy/Black from image */
+  --foreground: #F8FAFC;
+  /* Crisp white-ish text */
+  --border-muted: #1E293B;
+  /* Subtle Slate border */
+  --border-strong: #334155;
+  /* Stronger border */
+}
+
+.direction-rtl {
+  direction: rtl;
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply text-[#161E54] transition-colors;
+}
+
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+.text-peach-gold,
+.dark .text-peach-gold,
+span.text-peach-gold,
+div.text-peach-gold {
+  color: #ff9769 !important;
+}
+
+@utility font-heavy {
+  font-weight: 900;
+}
+
+.text-gradient-gold {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#F16D34] to-[#FF986A] dark:from-[#FFB800] dark:to-[#F59E0B];
+}
+
+/* NAVBAR - Original Premium Style */
+.navbar-header {
+  background-color: white !important;
+  border-bottom: 1px solid #BBE0EF !important;
+  height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.dark .navbar-header {
+  background-color: #151D2E !important;
+  border-bottom-color: #1E293B !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .navbar-header a span,
+.dark .navbar-header .text-xl,
+.dark .navbar-header .text-2xl,
+.dark .navbar-header .text-\[10px\] {
+  color: #FFFFFF !important;
+}
+
+.dark .navbar-header nav a {
+  color: #B6B09F !important;
+}
+
+.dark .navbar-header nav a:hover {
+  color: #FFFFFF !important;
+}
+
+/* HERO SECTION - Premium Financial Gradient */
+.hero-section {
+  @apply bg-[#BBE0EF]/20 dark:bg-transparent relative overflow-hidden px-4;
+}
+
+/* PRICE CARDS - Elevated Financial Cards */
+.price-card {
+  background-color: white;
+  border: 1px solid #BBE0EF;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.dark .price-card {
+  background-color: #151D2E;
+  /* Slightly lighter than body background */
+  border-color: #1E293B;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.dark .price-card:hover {
+  background-color: #1E293B !important;
+  border-color: #2DD4BF !important;
+}
+
+.price-card-highlight {
+  background-color: #ff9769 !important;
+  border-color: #ff9769 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 20px 25px -5px rgba(255, 151, 105, 0.3) !important;
+}
+
+.glass-card {
+  background-color: white;
+  border: 1px solid #BBE0EF;
+  border-radius: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.dark .glass-card,
+.dark .bg-card,
+.dark [class*="bg-white"]:not(.search-input-premium),
+.dark [class*="bg-slate-50"],
+.dark [class*="bg-slate-100"] {
+  background-color: #151D2E !important;
+  border-color: #1E293B !important;
+}
+
+.dark [class*="text-white"],
+.dark [class*="text-slate-100"],
+.dark .price-card span,
+.dark .price-card div {
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+.dark .search-input-premium {
+  background-color: #24375f !important;
+  color: #FFFFFF !important;
+}
+
+.dark .search-input-premium::placeholder {
+  color: #FFFFFF !important;
+  opacity: 0.7 !important;
+}
+
+/* Tables Styling */
+table {
+  @apply w-full border-collapse;
+}
+
+th {
+  background-color: rgba(187, 224, 239, 0.1);
+  border-top: 1px solid #BBE0EF;
+  border-bottom: 1px solid #BBE0EF;
+  padding: 1rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: #161E54;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: right;
+}
+
+.dark th {
+  background-color: #0B1121 !important;
+  border-color: #1E293B !important;
+  color: #FFFFFF !important;
+}
+
+td {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(187, 224, 239, 0.2);
+  text-align: right;
+  color: #161E54;
+}
+
+.dark td {
+  background-color: transparent !important;
+  border-color: #1E293B !important;
+  /* Visible divider line */
+  color: #FFFFFF !important;
+}
+
+tr:hover td {
+  @apply bg-slate-50 dark:bg-[#1E293B];
+}
+
+/* Section Titles - Premium Styling */
+.section-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  margin-bottom: 2rem !important;
+  padding-right: 1rem !important;
+  border-right: 4px solid #f16d34 !important;
+  font-size: 1.5rem !important;
+  font-weight: 900 !important;
+  color: #161E54 !important;
+}
+
+.dark .section-title {
+  color: #FFFFFF !important;
+  border-color: #FFB800 !important;
+}
+
+/* Scrollbar with Sky/Gold Mix */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-[#BBE0EF] dark:bg-[#1E293B] rounded-full border-2 border-transparent bg-clip-padding hover:bg-[#F16D34] dark:hover:bg-[#FFB800];
+}
+
+/* Buttons Global Refinement */
+button.btn-premium {
+  @apply px-6 py-3 rounded-xl font-bold transition-all active:scale-95;
+}
+
+.btn-primary {
+  @apply bg-[#F16D34] dark:bg-[#2DD4BF] text-white dark:text-[#0B1121] hover:opacity-90;
+}
+
+.btn-secondary {
+  @apply bg-[#161E54] dark:bg-[#1E293B] text-white dark:text-[#2DD4BF] border dark:border-[#2DD4BF]/20;
+}
+
+.text-gold-500 {
+  @apply text-[#F16D34] dark:text-[#FFB800];
+}
+
+.text-gold-600 {
+  @apply text-[#F16D34] dark:text-[#FFB800];
+}
+
+.text-mint {
+  @apply text-[#2DD4BF];
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
