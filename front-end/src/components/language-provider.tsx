@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import ar from '../dictionaries/ar.json';
-import en from '../dictionaries/en.json';
+import ar from '@/dictionaries/ar.json';
+import en from '@/dictionaries/en.json';
 
 type Locale = 'ar' | 'en';
 type Dictionary = typeof ar;
