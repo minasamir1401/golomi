@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+// Vercel Deployment Trigger: v2 (Fix Dictionaries)
+
 const nextConfig: NextConfig = {
   async rewrites() {
     // 🧠 Smart Backend Discovery
