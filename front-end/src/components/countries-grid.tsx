@@ -73,7 +73,7 @@ export function CountriesGrid() {
 
                 <Link
                     href="/countries"
-                    className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 text-slate-600 hover:text-gold-600 hover:border-gold-500/30 transition-all font-black"
+                    className="group flex items-center gap-2 px-6 py-3 rounded-2xl bg-white dark:bg-[#151D2E] border-2 border-slate-100 dark:border-[#1E293B] text-slate-600 dark:text-white hover:text-gold-600 hover:border-gold-500/30 transition-all font-black"
                 >
                     {t.countries.all}
                     <ArrowRight className={cn("h-4 w-4 transition-transform", isRTL ? "group-hover:-translate-x-1" : "group-hover:translate-x-1 rotate-0", !isRTL && "rotate-0")} />
@@ -95,12 +95,12 @@ export function CountriesGrid() {
                                     <span className="text-2xl">{info.flag}</span>
                                     <span className="text-[10px] font-black text-slate-400 uppercase">{info.currency}</span>
                                 </div>
-                                <h3 className="font-bold text-slate-700 dark:text-slate-300 mb-1 text-sm sm:text-base">{countryName}</h3>
+                                <h3 className="font-bold text-slate-700 dark:text-white mb-1 text-sm sm:text-base">{countryName}</h3>
                                 <div className={cn("flex items-end gap-1", !isRTL && "flex-row-reverse justify-end")}>
-                                    <span className="text-base sm:text-lg font-black text-gold-600 group-hover:scale-105 transition-transform">
+                                    <span className="text-base sm:text-lg font-black text-gold-600 dark:text-[#FFB800] group-hover:scale-105 transition-transform">
                                         {get21kPrice(slug)}
                                     </span>
-                                    <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold mb-1">21k</span>
+                                    <span className="text-[9px] sm:text-[10px] text-slate-400 dark:text-[#94A3B8] font-bold mb-1">21k</span>
                                 </div>
                             </motion.div>
                         </Link>

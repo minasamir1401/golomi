@@ -19,15 +19,14 @@ export function HistoricalPriceChart() {
             setLoading(true);
             const raw = await getPriceHistory(range);
             if (raw && Array.isArray(raw)) {
-                const formatted = raw.reverse().map((snap: any) => {
-                    const date = new Date(snap.timestamp);
-                    const p21 = snap.data?.prices?.["عيار 21"]?.sell || snap.data?.prices?.["21"]?.sell || 0;
+                // Reverse because backend returns newest first, chart needs oldest first
+                const formatted = [...raw].reverse().map((snap: any) => {
                     return {
                         time: range === 1
-                            ? date.toLocaleTimeString(locale === 'ar' ? "ar-EG" : "en-US", { hour: '2-digit', minute: '2-digit' })
-                            : date.toLocaleDateString(locale === 'ar' ? "ar-EG" : "en-US", { day: 'numeric', month: 'short' }),
-                        fullDate: date.toLocaleString(locale === 'ar' ? "ar-EG" : "en-US"),
-                        price: Number(p21)
+                            ? snap.time
+                            : snap.date,
+                        fullDate: `${snap.date} ${snap.time}`,
+                        price: Number(snap.sell)
                     };
                 });
                 setData(formatted);
@@ -35,22 +34,24 @@ export function HistoricalPriceChart() {
             setLoading(false);
         };
         fetchData();
+        const interval = setInterval(fetchData, 60000);
+        return () => clearInterval(interval);
     }, [range, locale]);
 
     return (
-        <div className="glass-card p-8 bg-white dark:bg-slate-900 border-gold-500/10 mt-12 overflow-hidden relative">
+        <div className="glass-card p-8 bg-white dark:bg-[#151D2E] border-slate-200 dark:border-[#1E293B] mt-12 overflow-hidden relative shadow-sm dark:shadow-black/40">
             <div className={`flex flex-col sm:flex-row items-center justify-between gap-6 mb-10 ${isRTL ? "text-right" : "text-left"}`}>
                 <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-gold-500/10 flex items-center justify-center text-gold-600 order-2">
+                    <div className="h-10 w-10 rounded-xl bg-gold-500/10 flex items-center justify-center text-gold-600 dark:text-[#FFB800] order-2">
                         <TrendingUp className="h-5 w-5" />
                     </div>
                     <div className="order-1">
                         <h3 className="text-xl font-black text-gradient-gold">{t.historical_chart.title}</h3>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">{t.historical_chart.subtitle}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-[#94A3B8] font-black uppercase tracking-widest">{t.historical_chart.subtitle}</p>
                     </div>
                 </div>
 
-                <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200 dark:border-white/5">
+                <div className="flex bg-slate-100 dark:bg-[#0B1121] p-1 rounded-2xl border border-slate-200 dark:border-[#1E293B]">
                     {[
                         { l: t.historical_chart.ranges.today, v: 1 },
                         { l: t.historical_chart.ranges["7d"], v: 7 },
@@ -63,8 +64,8 @@ export function HistoricalPriceChart() {
                             className={cn(
                                 "px-4 py-2 rounded-xl text-xs font-black transition-all",
                                 range === btn.v
-                                    ? "bg-white dark:bg-slate-800 text-gold-600 shadow-sm"
-                                    : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                                    ? "bg-white dark:bg-[#1E293B] text-gold-600 dark:text-[#FFB800] shadow-sm"
+                                    : "text-slate-400 hover:text-slate-600 dark:text-[#94A3B8] dark:hover:text-[#FFFFFF]"
                             )}
                         >
                             {btn.l}
@@ -96,6 +97,7 @@ export function HistoricalPriceChart() {
                                 tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }}
                                 minTickGap={30}
                                 padding={{ left: 10, right: 10 }}
+                                reversed={isRTL}
                             />
                             <YAxis
                                 domain={['auto', 'auto']}
@@ -132,8 +134,9 @@ export function HistoricalPriceChart() {
                                 strokeWidth={3}
                                 fillOpacity={1}
                                 fill="url(#colorPrice)"
-                                animationDuration={1500}
-                                dot={{ r: 4, fill: "#d4af37", strokeWidth: 2, stroke: "#fff" }}
+                                isAnimationActive={data.length < 50} // Smoother updates for live data
+                                animationDuration={1000}
+                                dot={range !== 1 ? { r: 4, fill: "#d4af37", strokeWidth: 2, stroke: "#fff" } : false}
                                 activeDot={{ r: 6, fill: "#d4af37", strokeWidth: 2, stroke: "#fff" }}
                             />
                         </AreaChart>
@@ -146,7 +149,7 @@ export function HistoricalPriceChart() {
                 )}
             </div>
 
-            <div className="mt-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <div className="mt-6 p-4 rounded-xl bg-slate-50 dark:bg-[#0B1121] border border-slate-100 dark:border-[#1E293B] flex items-center justify-center gap-4 text-[10px] font-black text-slate-400 dark:text-[#94A3B8] uppercase tracking-widest">
                 <Calendar className="h-3 w-3" />
                 <span>{t.historical_chart.source_archive}</span>
             </div>

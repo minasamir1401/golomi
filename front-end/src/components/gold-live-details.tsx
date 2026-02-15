@@ -43,21 +43,21 @@ export function GoldLiveDetails() {
     if (!prices.length && !products.length) return null;
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-16">
+        <div className="grid grid-cols-1 gap-6">
             {/* Live Prices */}
             {prices.length > 0 && (
                 <div className="glass-card p-6 border-gold-500/20 shadow-lg shadow-gold-500/5">
                     <h3 className={`text-xl font-black mb-6 flex items-center gap-2 ${!isRTL && "flex-row-reverse justify-end"}`}>
                         <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
-                        {t.gold_details.live_prices_title}
+                        {locale === 'ar' ? 'أسعار الذهب الآن' : 'Gold Prices Now'}
                     </h3>
                     <div className="overflow-x-auto">
                         <table className={`w-full ${isRTL ? "text-right" : "text-left"} border-collapse`}>
                             <thead>
-                                <tr className="bg-slate-50/50 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800 whitespace-nowrap">
-                                    <th className="p-2 sm:p-4 text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">{t.gold_details.col_karat}</th>
-                                    <th className="p-2 sm:p-4 text-[10px] sm:text-xs font-black text-emerald-500 uppercase tracking-widest">{t.gold_details.col_buy}</th>
-                                    <th className="p-2 sm:p-4 text-[10px] sm:text-xs font-black text-rose-500 uppercase tracking-widest">{t.gold_details.col_sell}</th>
+                                <tr className="bg-slate-50/50 dark:bg-[#0B1121] border-b border-slate-100 dark:border-[#1E293B] whitespace-nowrap">
+                                    <th className="p-2 sm:p-4 text-[10px] sm:text-xs font-black text-slate-400 dark:text-white uppercase tracking-widest">{t.gold_details.col_karat}</th>
+                                    <th className="p-2 sm:p-4 text-[10px] sm:text-xs font-black text-emerald-500 dark:text-[#2DD4BF] uppercase tracking-widest">{t.gold_details.col_buy}</th>
+                                    <th className="p-2 sm:p-4 text-[10px] sm:text-xs font-black text-rose-500 dark:text-rose-400 uppercase tracking-widest">{t.gold_details.col_sell}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -69,11 +69,11 @@ export function GoldLiveDetails() {
                                         transition={{ delay: i * 0.05 }}
                                         className="group hover:bg-gold-500/5 transition-colors"
                                     >
-                                        <td className="p-2 sm:p-4 font-black text-xs sm:text-base">{formatCarat(item.name)}</td>
-                                        <td className="p-2 sm:p-4 font-bold text-emerald-500 bg-emerald-500/5 rounded-lg text-xs sm:text-base whitespace-nowrap">
+                                        <td className="p-2 sm:p-4 font-black text-xs sm:text-base text-slate-900 dark:text-white">{formatCarat(item.name)}</td>
+                                        <td className="p-2 sm:p-4 font-bold text-emerald-500 dark:text-[#2DD4BF] bg-emerald-500/5 rounded-lg text-xs sm:text-base whitespace-nowrap">
                                             {new Intl.NumberFormat(locale === 'ar' ? "ar-EG" : "en-US").format(Number(item.buy) || 0)}
                                         </td>
-                                        <td className="p-2 sm:p-4 font-bold text-rose-500 bg-rose-500/5 rounded-lg text-xs sm:text-base whitespace-nowrap">
+                                        <td className="p-2 sm:p-4 font-bold text-rose-500 dark:text-rose-400 bg-rose-500/5 rounded-lg text-xs sm:text-base whitespace-nowrap">
                                             {new Intl.NumberFormat(locale === 'ar' ? "ar-EG" : "en-US").format(Number(item.sell) || 0)}
                                         </td>
                                     </motion.tr>
@@ -87,14 +87,16 @@ export function GoldLiveDetails() {
             {/* Products */}
             {products.length > 0 && (
                 <div className="glass-card p-6 border-gold-500/20 shadow-lg shadow-gold-500/5">
-                    <h3 className={`text-xl font-black mb-6 ${isRTL ? "text-right" : "text-left"}`}>{t.gold_details.products_title}</h3>
+                    <h3 className={`text-xl font-black mb-6 ${isRTL ? "text-right" : "text-left"}`}>
+                        {locale === 'ar' ? 'سبائك وجنيهات' : 'Bars & Coins'}
+                    </h3>
                     <div className="overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
                         <table className={`w-full ${isRTL ? "text-right" : "text-left"} border-collapse`}>
-                            <thead className="sticky top-0 bg-background z-10 shadow-sm">
-                                <tr className="bg-slate-50/50 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800">
-                                    <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t.gold_details.col_item}</th>
-                                    <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">{t.gold_details.col_weight}</th>
-                                    <th className="p-4 text-xs font-black text-gold-500 uppercase tracking-widest">{t.gold_details.col_price}</th>
+                            <thead className="sticky top-0 bg-white dark:bg-[#0B1121] z-10 shadow-sm">
+                                <tr className="bg-slate-50/50 dark:bg-[#0B1121] border-b border-slate-100 dark:border-[#1E293B]">
+                                    <th className="p-4 text-xs font-black text-slate-400 dark:text-white uppercase tracking-widest">{t.gold_details.col_item}</th>
+                                    <th className="p-4 text-xs font-black text-slate-400 dark:text-[#94A3B8] uppercase tracking-widest">{t.gold_details.col_weight}</th>
+                                    <th className="p-4 text-xs font-black text-gold-500 dark:text-[#FFB800] uppercase tracking-widest">{t.gold_details.col_price}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -106,9 +108,9 @@ export function GoldLiveDetails() {
                                         transition={{ delay: i * 0.02 }}
                                         className="group hover:bg-gold-500/5 transition-colors"
                                     >
-                                        <td className="p-2 sm:p-4 font-medium text-[10px] sm:text-sm">{item.name}</td>
-                                        <td className="p-2 sm:p-4 text-[10px] text-slate-500 font-bold whitespace-nowrap">{item.weight}</td>
-                                        <td className="p-2 sm:p-4 font-black text-gold-500 text-xs sm:text-base whitespace-nowrap">
+                                        <td className="p-2 sm:p-4 font-medium text-[10px] sm:text-sm text-slate-900 dark:text-white">{item.name}</td>
+                                        <td className="p-2 sm:p-4 text-[10px] text-slate-500 dark:text-[#94A3B8] font-bold whitespace-nowrap">{item.weight}</td>
+                                        <td className="p-2 sm:p-4 font-black text-gold-500 dark:text-[#FFB800] text-xs sm:text-base whitespace-nowrap">
                                             {new Intl.NumberFormat(locale === 'ar' ? "ar-EG" : "en-US").format(Number(item.price) || 0)}
                                         </td>
                                     </motion.tr>

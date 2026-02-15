@@ -1,32 +1,18 @@
-"use client";
+import { Metadata } from "next";
+import CurrenciesClient from "./currencies-client";
+import { getCurrencyPrices } from "@/lib/api";
 
-import { CurrencyTable } from "@/components/currency-table";
-import { GoldLiveCurrencies } from "@/components/gold-live-currencies";
-import { Navbar } from "@/components/navbar";
-import { useLanguage } from "@/components/language-provider";
+export const metadata: Metadata = {
+    title: "أسعار العملات اليوم في مصر | تحديث لحظي | جولد سيرفيس",
+    description: "تابع أسعار صرف العملات العربية والأجنبية في مصر لحظة بلحظة. أسعار الدولار، اليورو، الريال السعودي والدرهم الإماراتي تحديث مباشر من البنوك.",
+    alternates: {
+        canonical: "/currencies",
+    }
+};
 
-export default function CurrenciesPage() {
-    const { t } = useLanguage();
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-    const jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "CurrencyExchangeRate",
-        "name": t.currencies.title,
-        "description": t.currencies.parallel_market,
-    };
-
-    return (
-        <div className="min-h-screen bg-background pb-20">
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-            />
-            <Navbar />
-            <main className="container mx-auto px-4 py-8 pt-32">
-                <h1 className="text-3xl font-black mb-6 text-center text-gradient-gold">{t.currencies.title}</h1>
-                <CurrencyTable />
-                <GoldLiveCurrencies />
-            </main>
-        </div>
-    );
+export default async function CurrenciesPage() {
+    return <CurrenciesClient />;
 }

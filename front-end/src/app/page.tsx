@@ -1,10 +1,13 @@
 import { Metadata } from "next";
 import HomeClient from "./home-client";
-import { getGoldPrices } from "@/lib/api";
+import { getFullMarketSnapshot } from "@/lib/api";
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 
 export async function generateMetadata(): Promise<Metadata> {
-    const prices = await getGoldPrices();
-    const price21 = prices?.["عيار 21"]?.sell || "---";
+    const data = await getFullMarketSnapshot();
+    const price21 = data?.gold_egypt?.prices?.["21"]?.sell || data?.gold_egypt?.prices?.["عيار 21"]?.sell || "---";
     const date = new Date().toLocaleDateString("ar-EG", { month: 'long', day: 'numeric', year: 'numeric' });
 
     return {
@@ -21,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-    const initialPrices = await getGoldPrices();
+    const snapshot = await getFullMarketSnapshot();
 
     const jsonLd = {
         "@context": "https://schema.org",
@@ -34,7 +37,7 @@ export default async function HomePage() {
         },
         "offers": {
             "@type": "Offer",
-            "price": initialPrices?.["عيار 21"]?.sell || "0",
+            "price": snapshot?.gold_egypt?.prices?.["21"]?.sell || snapshot?.gold_egypt?.prices?.["عيار 21"]?.sell || "0",
             "priceCurrency": "EGP"
         }
     };
@@ -45,7 +48,7 @@ export default async function HomePage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
             />
-            <HomeClient initialPrices={initialPrices} />
+            <HomeClient initialSnapshot={snapshot} />
         </>
     );
 }

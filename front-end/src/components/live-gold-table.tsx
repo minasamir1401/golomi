@@ -1,201 +1,198 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Coins, TrendingUp, Clock, ArrowRightLeft, Zap, Landmark, BarChart3 } from "lucide-react";
+import { Coins, TrendingUp, Clock, ArrowRightLeft, Zap, Landmark, BarChart3, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getGoldPrices, getIsaghaPrices, getGoldPriceToday, getSarfGold, getGoldLivePrices } from "@/lib/api";
+import { getGoldPricesMap } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "./language-provider";
+import { useMarketData } from "./market-data-provider";
 
 export function LiveGoldTable() {
-    const [gePrices, setGePrices] = useState<any>(null);
-    const [isaghaPrices, setIsaghaPrices] = useState<any>(null);
-    const [gptPrices, setGptPrices] = useState<any>(null);
-    const [sarfGoldPrices, setSarfGoldPrices] = useState<any>(null);
-    const [glPrices, setGlPrices] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [source, setSource] = useState<"gold_era" | "isagha" | "gold_price_today" | "sarf_today" | "gold_live">("gold_live");
+    const { snapshot, loading, refresh } = useMarketData();
     const { t, locale, isRTL } = useLanguage();
 
-    useEffect(() => {
-        const fetchPrices = async () => {
-            const geData = await getGoldPrices();
-            const isData = await getIsaghaPrices();
-            const gptData = await getGoldPriceToday();
-            const sarfData = await getSarfGold();
-            const glData = await getGoldLivePrices();
-            if (geData) setGePrices(geData);
-            if (isData) setIsaghaPrices(isData);
-            if (gptData) setGptPrices(gptData);
-            if (sarfData) setSarfGoldPrices(sarfData);
-            if (glData) setGlPrices(glData);
-            setLoading(false);
-        };
-        fetchPrices();
-        const interval = setInterval(fetchPrices, 10000);
-        return () => clearInterval(interval);
-    }, []);
+    // Transform snapshot data to match the table's expected format
+    const data = snapshot ? {
+        prices: getGoldPricesMap(snapshot.gold_egypt?.prices),
+        timestamp: snapshot.gold_egypt?.last_update,
+        source: snapshot.gold_egypt?.source
+    } : null;
 
-    if (loading) return (
-        <div className="glass-card p-12 flex flex-col items-center justify-center gap-4 text-slate-400">
-            <div className="h-10 w-10 border-4 border-gold-500/20 border-t-gold-500 rounded-full animate-spin" />
-            <span className="font-black text-sm uppercase tracking-widest">{t.table.loading}</span>
+    if (loading && !snapshot) return (
+        <div className="glass-card overflow-hidden border-gold-500/20 animate-pulse">
+            <div className="premium-header h-20 bg-slate-50/50 dark:bg-[#0B1121]" />
+            <div className="p-6 space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex justify-between items-center h-12 bg-slate-100 dark:bg-[#1E293B] rounded-xl" />
+                ))}
+            </div>
         </div>
     );
 
-    const currentData = source === "gold_era"
-        ? gePrices
-        : source === "isagha"
-            ? isaghaPrices?.gold
-            : source === "sarf_today"
-                ? sarfGoldPrices
-                : source === "gold_live"
-                    ? glPrices
-                    : gptPrices?.current_prices;
+    if (!snapshot) return (
+        <div className="glass-card p-8 border-red-500/20 text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-red-600 dark:text-red-400">فشل تحميل الأسعار</h3>
+            <p className="text-sm text-slate-500 mt-2">يرجى المحاولة مرة أخرى لاحقاً</p>
+            <button
+                onClick={() => { refresh(); }}
+                className="mt-4 px-4 py-2 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 transition-colors"
+            >
+                إعادة المحاولة
+            </button>
+        </div>
+    );
 
-    if (!currentData) return null;
+    // Helper function to extract karat number from name
+    const getKaratValue = (name: string): number => {
+        if (name.includes('24')) return 24;
+        if (name.includes('21')) return 21;
+        if (name.includes('18')) return 18;
+        if (name.includes('14')) return 14;
+        if (name.includes('12')) return 12;
+        if (name.includes('9')) return 9;
+        return 0; // For pounds/ounces
+    };
 
-    const items: [string, any][] = source === "gold_era" || source === "sarf_today"
-        ? Object.entries(currentData).filter(([key]) => key.includes("عيار"))
-        : source === "isagha"
-            ? Object.entries(currentData).map(([k, v]: [string, any]) => [`عيار ${k}`, v])
-            : source === "gold_live"
-                ? currentData.map((item: any) => [item.name, { buy: item.buy, sell: item.sell }])
-                : Object.entries(currentData).filter(([key]) => key.includes("عيار"));
+    // Sort keys based on numeric value or special types
+    const sortedKeys = data?.prices ? Object.keys(data.prices).sort((a, b) => {
+        // Handle special items first
+        if (a.includes('جنيه') || a.includes('pound')) return 1; // Pounds at bottom
+        if (b.includes('جنيه') || b.includes('pound')) return -1;
 
-    const formatCaratName = (name: string) => {
-        if (locale === 'ar') return name;
-        return name.replace('عيار ', 'Carat ');
+        if (a.includes('أونصة') || a.includes('ounce')) return 1; // Ounces at very bottom
+        if (b.includes('أونصة') || b.includes('ounce')) return -1;
+
+        // Sort karats descending
+        const valA = getKaratValue(a);
+        const valB = getKaratValue(b);
+        return valB - valA;
+    }) : [];
+
+    // Filter duplicates (English vs Arabic keys in new API structure)
+    // We prefer Arabic keys for the UI if locale is Arabic, else English
+    // Also filter out invalid/uncommon karats
+    const displayKeys = sortedKeys.filter(key => {
+        // Only show Arabic keys to avoid duplication since getGoldPricesMap adds English ones
+        if (!key.includes('عيار') && !key.includes('جنيه') && !key.includes('أونصة')) {
+            return false;
+        }
+
+        // Only show standard karats: 24, 21, 18, 14, 12
+        // Plus gold pound (جنيه) and ounce (أونصة)
+        const standardKarats = ['24', '21', '18', '14', '12'];
+
+        if (key.includes('جنيه') || key.includes('أونصة')) {
+            return true; // Always show gold pound and ounce
+        }
+
+        // Check if this is a standard karat
+        return standardKarats.some(karat => key.includes(karat));
+    });
+
+    const formatPrice = (val: number | undefined) => {
+        if (val === undefined || val === null) return "---";
+        return new Intl.NumberFormat(locale === 'ar' ? "ar-EG" : "en-US").format(val);
     };
 
     return (
         <div className="glass-card overflow-hidden border-gold-500/20 shadow-2xl shadow-gold-500/5 transition-all duration-500">
-            <div className="premium-header flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div className="premium-header flex flex-col sm:flex-row items-center justify-between gap-4 p-4 min-[350px]:p-6">
                 <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-xl gold-gradient-bg flex items-center justify-center shadow-lg shadow-gold-500/20">
-                        <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5 text-slate-900" />
+                    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-slate-100 dark:bg-[#1E293B] flex items-center justify-center shadow-lg dark:shadow-black/20">
+                        <Coins className="h-5 w-5 sm:h-6 sm:w-6 text-[#161E54] dark:text-[#FFB800]" />
                     </div>
                     <div>
-                        <h3 className="text-lg sm:text-xl font-black text-gradient-gold">{t.table.title}</h3>
-                        <p className="text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">{t.table.subtitle}</p>
+                        <h3 className="text-xl sm:text-2xl font-black text-gradient-gold">
+                            {t?.table?.title || "أسعار الذهب اليوم"}
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-[#94A3B8] font-bold uppercase tracking-widest mt-1">
+                            {t?.table?.subtitle || "تحديث لحظي من السوق المحلي"}
+                        </p>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-center bg-slate-100 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200 dark:border-white/5 gap-1">
-                    <button
-                        onClick={() => setSource("gold_live")}
-                        className={cn(
-                            "flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black transition-all outline-none",
-                            source === "gold_live"
-                                ? "bg-white dark:bg-slate-800 text-gold-600 shadow-sm"
-                                : "text-slate-400 hover:text-slate-600"
-                        )}
-                    >
-                        <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Gold Live
-                    </button>
-                    <button
-                        onClick={() => setSource("gold_era")}
-                        className={cn(
-                            "flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black transition-all outline-none",
-                            source === "gold_era"
-                                ? "bg-white dark:bg-slate-800 text-gold-600 shadow-sm"
-                                : "text-slate-400 hover:text-slate-600"
-                        )}
-                    >
-                        <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Gold Ser
-                    </button>
-                    <button
-                        onClick={() => setSource("gold_price_today")}
-                        className={cn(
-                            "flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black transition-all outline-none",
-                            source === "gold_price_today"
-                                ? "bg-white dark:bg-slate-800 text-emerald-600 shadow-sm"
-                                : "text-slate-400 hover:text-slate-600"
-                        )}
-                    >
-                        <BarChart3 className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> GPT
-                    </button>
-                    <button
-                        onClick={() => setSource("isagha")}
-                        className={cn(
-                            "flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black transition-all outline-none",
-                            source === "isagha"
-                                ? "bg-white dark:bg-slate-800 text-blue-600 shadow-sm"
-                                : "text-slate-400 hover:text-slate-600"
-                        )}
-                    >
-                        <Landmark className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> iSaga
-                    </button>
-                    <button
-                        onClick={() => setSource("sarf_today")}
-                        className={cn(
-                            "flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-[9px] sm:text-[10px] font-black transition-all outline-none",
-                            source === "sarf_today"
-                                ? "bg-white dark:bg-slate-800 text-purple-600 shadow-sm"
-                                : "text-slate-400 hover:text-slate-600"
-                        )}
-                    >
-                        <Landmark className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> Sarf
-                    </button>
+                <div className="flex items-center gap-2 bg-slate-100 dark:bg-[#1E293B] px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#2DD4BF]/20">
+                    <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-[#2DD4BF]">
+                        مباشر
+                    </span>
                 </div>
             </div>
 
             <div className="overflow-x-auto">
                 <table className={cn("w-full border-collapse", isRTL ? "text-right" : "text-left")}>
                     <thead>
-                        <tr className="bg-slate-50/50 dark:bg-slate-900/30 whitespace-nowrap">
-                            <th className="px-3 sm:px-6 py-4 text-[9px] sm:text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">{t.table.carat}</th>
-                            <th className="px-3 sm:px-6 py-4 text-[9px] sm:text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">{t.table.buy}</th>
-                            <th className="px-3 sm:px-6 py-4 text-[9px] sm:text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">{t.table.sell}</th>
-                            <th className="px-3 sm:px-6 py-4 text-[9px] sm:text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest">{t.table.trend}</th>
+                        <tr className="bg-slate-50/50 dark:bg-[#0B1121] whitespace-nowrap border-y border-slate-100 dark:border-[#1E293B]">
+                            <th className="px-2 min-[400px]:px-4 sm:px-6 py-4 text-[9px] sm:text-xs font-black text-slate-500 dark:text-white uppercase tracking-widest text-right">
+                                {t?.table?.carat || "العيار"}
+                            </th>
+                            <th className="px-2 min-[400px]:px-4 sm:px-6 py-4 text-[9px] sm:text-xs font-black text-slate-500 dark:text-white uppercase tracking-widest text-center">
+                                {t?.table?.buy || "شراء"}
+                            </th>
+                            <th className="px-2 min-[400px]:px-4 sm:px-6 py-4 text-[9px] sm:text-xs font-black text-slate-500 dark:text-white uppercase tracking-widest text-center">
+                                {t?.table?.sell || "بيع"}
+                            </th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {items.map(([name, val]: [string, any], i) => (
-                            <motion.tr
-                                key={`${source}-${name}`}
-                                initial={{ opacity: 0, x: isRTL ? -10 : 10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.05 }}
-                                className="group hover:bg-gold-500/5 transition-colors"
-                            >
-                                <td className="px-3 sm:px-6 py-5">
-                                    <div className="flex items-center gap-2 sm:gap-3">
-                                        <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-gold-500/20 transition-colors">
-                                            <Coins className="h-3 w-3 sm:h-4 sm:w-4 text-gold-600" />
+                    <tbody className="divide-y divide-slate-100 dark:divide-[#1E293B]">
+                        {displayKeys.map((key, i) => {
+                            const item = (data?.prices as any)?.[key];
+                            // Skip if no sell price
+                            if (!item || !item.sell) return null;
+
+                            return (
+                                <motion.tr
+                                    key={key}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                    className="group hover:bg-slate-50 dark:hover:bg-[#151D2E] transition-all cursor-pointer"
+                                >
+                                    <td className="px-2 min-[400px]:px-4 sm:px-6 py-4">
+                                        <div className="flex items-center gap-1.5 min-[350px]:gap-3">
+                                            <div className="h-6 w-6 min-[350px]:h-8 min-[350px]:w-8 rounded-lg bg-slate-100 dark:bg-[#1E293B] flex items-center justify-center group-hover:bg-gold-500/20 dark:group-hover:bg-[#FFB800]/20 transition-colors shrink-0">
+                                                {key.includes('جنيه') ? <Landmark className="h-3 w-3 min-[350px]:h-4 min-[350px]:w-4 text-gold-600 dark:text-[#FFB800]" /> :
+                                                    key.includes('أونصة') ? <Zap className="h-3 w-3 min-[350px]:h-4 min-[350px]:w-4 text-gold-600 dark:text-[#FFB800]" /> :
+                                                        <span className="text-[10px] min-[350px]:text-xs font-black text-gold-600 dark:text-[#FFB800]">{getKaratValue(key)}</span>}
+                                            </div>
+                                            <span className="font-bold text-slate-900 dark:text-white text-xs min-[350px]:text-base whitespace-nowrap lg:whitespace-normal">
+                                                {key}
+                                            </span>
                                         </div>
-                                        <span className="font-black text-foreground text-xs sm:text-base whitespace-nowrap">{formatCaratName(name)}</span>
-                                    </div>
-                                </td>
-                                <td className="px-3 sm:px-6 py-5">
-                                    <span className="text-sm sm:text-lg font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                                        {new Intl.NumberFormat(locale === 'ar' ? "ar-EG" : "en-US").format(Number(val.buy) || 0)} <span className="text-[10px] sm:text-xs">{t.price_cards.unit}</span>
-                                    </span>
-                                </td>
-                                <td className="px-3 sm:px-6 py-5">
-                                    <span className="text-sm sm:text-lg font-black text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                                        {new Intl.NumberFormat(locale === 'ar' ? "ar-EG" : "en-US").format(Number(val.sell) || 0)} <span className="text-[10px] sm:text-xs">{t.price_cards.unit}</span>
-                                    </span>
-                                </td>
-                                <td className="px-3 sm:px-6 py-5">
-                                    <div className="flex items-center gap-1 text-emerald-500 font-bold text-[10px] sm:text-sm">
-                                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                                        <span>+0.2%</span>
-                                    </div>
-                                </td>
-                            </motion.tr>
-                        ))}
+                                    </td>
+                                    <td className="px-2 min-[400px]:px-4 sm:px-6 py-4 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-xs min-[350px]:text-lg font-black text-emerald-600 dark:text-[#2DD4BF] tabular-nums tracking-tight">
+                                                {formatPrice(item.buy)}
+                                            </span>
+                                            <span className="text-[8px] min-[350px]:text-[9px] text-slate-400 dark:text-[#94A3B8] font-medium">EGP</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-2 min-[400px]:px-4 sm:px-6 py-4 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-xs min-[350px]:text-lg font-black text-peach-gold tabular-nums tracking-tight">
+                                                {formatPrice(item.sell)}
+                                            </span>
+                                            <span className="text-[8px] min-[350px]:text-[9px] text-slate-400 dark:text-[#94A3B8] font-medium">EGP</span>
+                                        </div>
+                                    </td>
+                                </motion.tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
 
-            <div className="premium-footer flex flex-col sm:flex-row items-center justify-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <div className="flex items-center gap-1">
+            <div className="premium-footer flex flex-col sm:flex-row items-center justify-center gap-4 py-6 bg-slate-50/50 dark:bg-[#151D2E] border-t border-slate-100 dark:border-[#1E293B] text-[10px] font-bold uppercase tracking-widest">
+                <div className="flex items-center gap-1.5 text-slate-400 dark:text-[#FFFFFF]">
                     <Clock className="h-3 w-3" />
-                    <span>{t.table.last_update}</span>
+                    {/* Show time of first item as reference */}
+                    <span dir="ltr">{displayKeys[0] && (data?.prices as any)?.[displayKeys[0]]?.timestamp ? new Date((data?.prices as any)[displayKeys[0]].timestamp).toLocaleTimeString("ar-EG") : "--:--"}</span>
                 </div>
-                <span className="hidden sm:inline">•</span>
-                <span>{t.table.source}: {source === "gold_era" ? "Gold Service" : source === "gold_price_today" ? "Gold Price Today" : source === "sarf_today" ? "Sarf" : source === "gold_live" ? "Gold Price Live" : "iSaga Market"}</span>
+                <span className="hidden sm:inline text-slate-300 dark:text-[#1E293B]">•</span>
+                <span className="text-slate-400 dark:text-[#FFFFFF]">الأسعار لا تشمل المصنعية</span>
             </div>
         </div>
     );

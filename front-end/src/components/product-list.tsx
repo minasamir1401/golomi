@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { getGoldProducts } from "@/lib/api";
+import { getGoldLiveProducts } from "@/lib/api";
 import { LoadingSpinner } from "./loading-spinner";
 
 export function ProductList() {
@@ -11,7 +11,7 @@ export function ProductList() {
 
     useEffect(() => {
         const fetchProducts = async () => {
-            const data = await getGoldProducts();
+            const data = await getGoldLiveProducts();
             if (data) setProducts(data);
             setLoading(false);
         };

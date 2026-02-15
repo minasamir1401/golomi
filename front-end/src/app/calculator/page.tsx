@@ -7,6 +7,9 @@ export const metadata: Metadata = {
     keywords: ["حاسبة الذهب", "حساب المصنعية", "سعر الذهب عيار 21 بالمصنعية", "حساب الضرائب على الذهب"],
 };
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function CalculatorPage() {
     const jsonLd = {
         "@context": "https://schema.org",

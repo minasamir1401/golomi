@@ -32,11 +32,19 @@ export function LivePriceCards() {
         };
 
         fetchCards();
-        const interval = setInterval(fetchCards, 30000); // 30 seconds
+        const interval = setInterval(fetchCards, 60000); // 1 minute
         return () => clearInterval(interval);
     }, []);
 
-    if (cards.length === 0) return null;
+    if (cards.length === 0) {
+        return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
+                {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-24 rounded-[32px] bg-white dark:bg-white/5 border border-slate-100 dark:border-white/10 animate-pulse" />
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-12">
@@ -50,6 +58,7 @@ export function LivePriceCards() {
                         href={card.url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label={`${card.label}: ${card.price} ${card.unit}`}
                         initial={{ opacity: 0, scale: 0.95 }}
                         whileInView={{ opacity: 1, scale: 1 }}
                         viewport={{ once: true }}
@@ -60,7 +69,7 @@ export function LivePriceCards() {
                             "flex-shrink-0 w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-500 group-hover:scale-110",
                             isAdvice ? "bg-blue-500/10 text-blue-500" : "bg-gold-500/10 text-gold-500"
                         )}>
-                            <Icon className="w-7 h-7" />
+                            <Icon className="w-7 h-7" aria-hidden="true" />
                         </div>
 
                         <div className={cn("flex flex-col min-w-0", isRTL ? "text-right" : "text-left")}>

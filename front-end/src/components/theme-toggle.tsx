@@ -6,6 +6,15 @@ import { useTheme } from "next-themes";
 
 export function ThemeToggle() {
     const { theme, setTheme } = useTheme();
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) {
+        return <div className="h-10 w-10" />;
+    }
 
     return (
         <button
