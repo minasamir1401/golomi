@@ -33,6 +33,7 @@ __pycache__/
 !next.config.js
 !next.config.ts
 !api_data.json
+!front-end/src/dictionaries/*.json
 !manual_seed.py
 check_api.py
 debug_scraper.py
