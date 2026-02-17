@@ -9,6 +9,7 @@ import { useLanguage } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
 import UnifiedCurrencyCalculator from "@/components/unified-currency-calculator";
 import { QASection } from "@/components/qa-section";
+import AdBanner from "@/components/ads/ad-banner";
 
 export default function CurrenciesClient() {
     const { t, locale, isRTL } = useLanguage();
@@ -140,6 +141,10 @@ export default function CurrenciesClient() {
                                 <p className="text-slate-600 dark:text-[#94A3B8] font-bold max-w-2xl mx-auto text-[10px] min-[350px]:text-sm sm:text-base mb-6 min-[350px]:mb-10 px-6">
                                     {t.currencies_client.subtitle}
                                 </p>
+                                <div className="space-y-2 mt-4">
+                                    <AdBanner type="horizontal" />
+                                    <AdBanner type="native" />
+                                </div>
                             </div>
 
                             <div className="mb-16 flex flex-col items-center gap-10">
@@ -253,9 +258,20 @@ export default function CurrenciesClient() {
                                     )}
                                 </div>
                             )}
+                            <div className="space-y-2">
+                                <AdBanner type="horizontal" />
+                                <AdBanner type="horizontal" />
+                                <AdBanner type="native" />
+                                <AdBanner type="horizontal" />
+                            </div>
 
                             <div className="mb-16">
                                 <QASection pageKey="currencies" />
+                            </div>
+                            <div className="space-y-2">
+                                <AdBanner type="horizontal" />
+                                <AdBanner type="horizontal" />
+                                <AdBanner type="horizontal" />
                             </div>
 
                             <div className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 px-1 min-[350px]:px-4">
@@ -298,6 +314,11 @@ export default function CurrenciesClient() {
                                         </motion.button>
                                     );
                                 })}
+                            </div>
+                            <div className="mt-12 flex flex-col gap-6 no-print">
+                                <AdBanner type="native" />
+                                <AdBanner type="horizontal" />
+                                <AdBanner type="horizontal" />
                             </div>
                         </motion.div>
                     ) : (

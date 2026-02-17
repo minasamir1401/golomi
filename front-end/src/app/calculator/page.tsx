@@ -14,7 +14,7 @@ export default function CalculatorPage() {
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "حاسبة جولد سيرفيس الذكية",
+        "name": "حاسبة جولد مول الذكية",
         "description": "أداة ذكية لحساب قيمة الذهب والسبائك بالمصنعية والضريبة",
         "applicationCategory": "FinanceApplication",
         "operatingSystem": "All"

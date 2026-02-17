@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { getGoldPrices } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
+import AdBanner from "@/components/ads/ad-banner";
 
 export default function CalculatorPage() {
     const { t, locale, isRTL } = useLanguage();
@@ -84,6 +85,10 @@ export default function CalculatorPage() {
                     <p className="text-slate-400 font-bold max-w-2xl mx-auto text-[10px] min-[350px]:text-sm sm:text-base px-2">
                         {t.calculator_client.subtitle}
                     </p>
+                    <div className="mt-8 space-y-2">
+                        <AdBanner type="horizontal" />
+                        <AdBanner type="native" />
+                    </div>
                 </div>
             </section>
 
@@ -198,6 +203,7 @@ export default function CalculatorPage() {
                                     </div>
                                 </div>
                             </div>
+                            <AdBanner type="native" />
                         </div>
 
                         <div className="bg-gold-50 dark:bg-[#151D2E] rounded-2xl sm:rounded-3xl p-4 sm:p-8 flex items-center gap-4 sm:gap-6 border border-gold-200 dark:border-[#1E293B] shadow-sm">
@@ -277,7 +283,7 @@ export default function CalculatorPage() {
                 <div className="print-only p-12 bg-white text-slate-900 font-sans border-4 border-slate-900">
                     <div className="flex justify-between items-start border-b-4 border-gold-500 pb-10 mb-12">
                         <div>
-                            <h1 className="text-5xl font-black tracking-tighter mb-2">GOLD<span className="text-gold-600">LIVE</span></h1>
+                            <h1 className="text-5xl font-black tracking-tighter mb-2">GOLD<span className="text-gold-600">MALL</span></h1>
                             <p className="text-slate-400 font-black tracking-[0.3em] uppercase text-xs">Premium Service</p>
                         </div>
                         <div className="text-right">

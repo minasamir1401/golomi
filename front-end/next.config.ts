@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 // Vercel Deployment Trigger: v2 (Fix Dictionaries)
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   async rewrites() {
     // 🧠 Smart Backend Discovery
     // Detects backend URL and prevents common "trailing slash" or redundant "/api" errors

@@ -17,6 +17,7 @@ const LiveGoldTable = dynamic(() => import("@/components/live-gold-table").then(
 const GoldHistoryTable = dynamic(() => import("@/components/gold-history-table").then(mod => mod.GoldHistoryTable), { ssr: false });
 const GoldAnalysisChart = dynamic(() => import("@/components/gold-analysis-chart").then(mod => mod.GoldAnalysisChart), { ssr: false });
 const QASection = dynamic(() => import("@/components/qa-section").then(mod => mod.QASection), { ssr: false });
+import AdBanner from "@/components/ads/ad-banner";
 
 
 
@@ -89,9 +90,9 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
             className="text-2xl min-[350px]:text-3xl sm:text-5xl md:text-6xl font-heavy text-slate-900 dark:text-[#FFFFFF] tracking-tighter mb-3 min-[350px]:mb-4 leading-[1.1] max-w-4xl px-2"
           >
             {locale === 'ar' ? (
-              <>بوصلتك <span className="text-gradient-gold">الاستثمارية</span> الأولى في سوق الذهب</>
+              <>سعر الذهب اليوم | بوصلتك <span className="text-gradient-gold">الاستثمارية</span> الأولى</>
             ) : (
-              <>Your Ultimate <span className="text-gradient-gold">Investment</span> Companion</>
+              <>Gold Price Today | Your Ultimate <span className="text-gradient-gold">Investment</span> Companion</>
             )}
           </motion.h1>
 
@@ -102,8 +103,8 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
             className="text-slate-800 dark:text-slate-200 font-heavy max-w-2xl mx-auto mb-6 min-[350px]:mb-8 text-xs min-[350px]:text-base sm:text-lg leading-relaxed opacity-90 px-4"
           >
             {locale === 'ar'
-              ? "نقدم لك أدق البيانات التاريخية واللحظية لأسعار الذهب والعملات في مصر، مدعومة بتحليلات الخبراء لمساعدتك في اتخاذ القرار الصحيح."
-              : "Providing you with the most accurate historical and real-time gold and currency data in Egypt, backed by expert analysis."}
+              ? "تابع سعر الذهب عيار 21 وسعر الذهب الآن لحظة بلحظة. منصة جولد مول تقدم لك تغطية حية لبورصة الذهب، أسعار العملات، وسعر الدولار اليوم في مصر."
+              : "Track the gold price today and live market moves. Gold Mall provides real-time coverage of the gold market, currency rates, and USD price in Egypt."}
           </motion.p>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -120,10 +121,14 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
               <p className="text-[9px] min-[350px]:text-[11px] font-heavy text-slate-900 dark:text-white tabular-nums">{lastUpdate}</p>
             </motion.div>
           </div>
+          <div className="mt-8">
+            <AdBanner type="horizontal" />
+          </div>
         </div>
       </section>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10 pb-20">
+        <AdBanner type="horizontal" />
         {/* CTA APP BANNER - Re-Colored to Navy/Sky Palette */}
         <div className="bg-[#161E54] dark:bg-[#151D2E] rounded-[2rem] min-[350px]:rounded-[2.5rem] p-6 min-[350px]:p-8 sm:p-12 mb-12 min-[350px]:mb-16 flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 border border-[#BBE0EF]/10 dark:border-[#1E293B] shadow-2xl dark:shadow-black/40 overflow-hidden relative text-center lg:text-right">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500/5 blur-[100px] -mr-48 -mt-48" />
@@ -133,7 +138,7 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
             </div>
             <div>
               <h3 className="text-xl min-[350px]:text-2xl sm:text-3xl font-heavy mb-2" style={{ color: '#FFFFFF' }}>
-                {locale === 'ar' ? 'حمل تطبيق جولد لايف' : 'Download Gold Live App'}
+                {locale === 'ar' ? 'حمل تطبيق جولد مول' : 'Download Gold Mall App'}
               </h3>
               <p className="text-xs min-[350px]:text-sm sm:text-base font-bold opacity-80" style={{ color: '#FFFFFF' }}>
                 {locale === 'ar' ? 'تابع التحركات لحظة بلحظة من هاتفك مباشرة' : 'Stay updated with live moves directly from your phone'}
@@ -145,6 +150,13 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
             <button className="w-full min-[400px]:w-auto px-6 sm:px-8 py-3 sm:py-4 border border-white/20 text-white rounded-xl sm:rounded-2xl font-heavy hover:bg-white/10 transition-all text-sm sm:text-base" style={{ color: '#FFFFFF' }}>App Store</button>
           </div>
         </div>
+
+        <div className="flex flex-col gap-4 mb-12">
+          <AdBanner type="horizontal" />
+          <AdBanner type="horizontal" />
+        </div>
+
+        <AdBanner type="horizontal" />
 
         {/* PRICE CARDS GRID */}
         <div className="grid grid-cols-1 min-[320px]:grid-cols-2 lg:grid-cols-5 gap-2 min-[350px]:gap-3 sm:gap-6 mb-12 sm:mb-16">
@@ -173,10 +185,13 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
             );
           })}
         </div>
+        <AdBanner type="native" />
+        <AdBanner type="native" />
+        <AdBanner type="horizontal" />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* LEFT COLUMN: Data & Tables */}
-          <div className="lg:col-span-8 space-y-16">
+          <div className="lg:col-span-8 space-y-8">
             <div>
               <h2 className="section-title">
                 {locale === 'ar' ? 'حركة السوق اليوم' : 'Market Performance Today'}
@@ -184,27 +199,46 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
               <div className="bg-white dark:bg-[#151D2E] rounded-[2.5rem] p-4 sm:p-8 border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-black/40">
                 <TradingViewChart />
               </div>
+              <div className="space-y-2 mt-4">
+                <AdBanner type="horizontal" />
+                <AdBanner type="native" />
+                <AdBanner type="horizontal" />
+                <AdBanner type="horizontal" />
+              </div>
               <GoldAnalysisChart />
+
+              <AdBanner type="horizontal" />
+              <AdBanner type="horizontal" />
 
             </div>
 
+            <div className="space-y-4">
+              <AdBanner type="horizontal" />
+              <AdBanner type="horizontal" />
+            </div>
+
             <QASection pageKey="home" />
+
+            <AdBanner type="horizontal" />
 
             <div>
               <h2 className="section-title">
                 {locale === 'ar' ? 'جدول أسعار الذهب' : 'Gold Price Tables'}
               </h2>
               <div className="space-y-8">
+                <AdBanner type="horizontal" />
                 <LiveGoldTable />
-
+                <AdBanner type="horizontal" />
+                <AdBanner type="horizontal" />
                 <GoldHistoryTable />
+                <AdBanner type="horizontal" />
               </div>
             </div>
 
           </div>
 
           {/* RIGHT COLUMN: Sidebar Widgets */}
-          <div className="lg:col-span-4 space-y-10">
+          <div className="lg:col-span-4 space-y-6">
             <div className="bg-white dark:bg-[#151D2E] rounded-[2.5rem] p-8 border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-black/40">
               <h3 className="text-lg font-heavy mb-8 flex items-center gap-3 border-r-4 border-gold-600 dark:border-[#FFB800] pr-3 text-slate-900 dark:text-white">
                 {locale === 'ar' ? 'أسعار العملات والدولار' : 'Currencies & USD Rates'}
@@ -238,9 +272,15 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
               <Link href="/currencies" className="mt-8 w-full py-4 bg-slate-900 dark:bg-[#FFB800] text-white dark:text-[#0B1121] rounded-2xl text-center font-heavy text-sm block hover:opacity-90 transition-all border border-slate-800 dark:border-[#FFB800] shadow-xl dark:shadow-black/40">
                 {locale === 'ar' ? 'عرض كافة أسعار البنوك' : 'View All Bank Rates'}
               </Link>
+              <div className="mt-6 flex flex-col gap-4">
+                <AdBanner type="horizontal" />
+                <AdBanner type="horizontal" />
+              </div>
             </div>
 
             <CurrencyConverter />
+            <AdBanner type="horizontal" />
+            <AdBanner type="horizontal" />
 
             {/* News Sidebar Preview */}
             <div className="bg-white dark:bg-[#151D2E] rounded-3xl p-8 border border-slate-200 dark:border-[#1E293B] shadow-sm dark:shadow-black/40">
@@ -263,8 +303,16 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
                 {locale === 'ar' ? 'مشاهدة المزيد من الأخبار' : 'Watch More News'}
                 <ChevronLeft className={cn("w-4 h-4", locale !== 'ar' && "rotate-180")} />
               </Link>
+              <div className="mt-6">
+                <AdBanner type="horizontal" />
+              </div>
             </div>
           </div>
+        </div>
+        <div className="mt-12">
+          <AdBanner type="native" />
+          <AdBanner type="horizontal" />
+          <AdBanner type="horizontal" />
         </div>
       </main>
 
@@ -277,7 +325,7 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
                   <Coins className="h-6 w-6 text-slate-900" />
                 </div>
                 <span className="text-2xl font-heavy leading-none text-white tracking-tighter">
-                  GOLD<span className="text-gold-500">LIVE</span>
+                  GOLD<span className="text-gold-500">MALL</span>
                 </span>
               </Link>
               <p className="text-slate-400 font-bold text-sm leading-relaxed max-w-sm mb-6">
@@ -310,7 +358,7 @@ export default function HomeClient({ initialSnapshot }: HomeClientProps) {
           </div>
           <div className="pt-10 border-t border-white/5 text-center">
             <p className="text-[10px] font-black text-slate-600 tracking-[0.2em] uppercase">
-              © {new Date().getFullYear()} GOLD LIVE SERVICE. ALL RIGHTS RESERVED.
+              © {new Date().getFullYear()} GOLD MALL. ALL RIGHTS RESERVED.
             </p>
           </div>
         </div>

@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
     if (!article) {
         return {
-            title: 'المقال غير موجود | جولد سيرفيس',
+            title: 'المقال غير موجود | جولد مول',
             robots: { index: false }
         };
     }
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             type: 'article',
             publishedTime: article.created_at,
             modifiedTime: article.updated_at,
-            authors: [article.author || 'Gold Service'],
+            authors: [article.author || 'Gold Mall'],
         },
         twitter: {
             card: 'summary_large_image',

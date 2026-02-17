@@ -3,9 +3,10 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { Navbar } from "@/components/navbar";
 import { Bell, ChevronLeft, Calendar, Share2 } from "lucide-react";
+import AdBanner from "@/components/ads/ad-banner";
 
 export const metadata: Metadata = {
-    title: "أخبار الذهب والاقتصاد | جولد سيرفيس",
+    title: "أخبار الذهب والاقتصاد | جولد مول",
     description: "تابع أحدث أخبار سوق الذهب والتحليلات الاقتصادية في مصر والعالم.",
 };
 
@@ -35,6 +36,10 @@ export default async function NewsPage() {
                     </p>
                 </div>
             </section>
+            <div className="max-w-7xl mx-auto px-4 mb-8">
+                <AdBanner type="horizontal" />
+                <AdBanner type="native" />
+            </div>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
@@ -95,6 +100,11 @@ export default async function NewsPage() {
                             </Link>
                         ))
                     )}
+                </div>
+                <div className="mt-6 flex flex-col gap-2 no-print">
+                    <AdBanner type="native" />
+                    <AdBanner type="horizontal" />
+                    <AdBanner type="horizontal" />
                 </div>
             </main>
         </div>

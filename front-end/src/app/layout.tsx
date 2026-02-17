@@ -21,8 +21,6 @@ export const viewport: Viewport = {
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getAdminSettings().catch(() => null);
 
-  // Transform settings array to object if needed, or use defaults
-  // Assuming settings is array of { key, value }
   const settingMap: Record<string, string> = {};
   if (Array.isArray(settings)) {
     settings.forEach((s: any) => {
@@ -30,9 +28,28 @@ export async function generateMetadata(): Promise<Metadata> {
     });
   }
 
-  const siteTitle = settingMap["site_title"] || "جولد سيرفيس | أسعار الذهب والعملات اليوم في مصر";
-  const siteDescription = settingMap["site_description"] || "اخر تحديثات وأسعار الذهب والعملات في مصر والعالم. بث مباشر لأسعار عيار 21، 24، 18، وأسعار السبائك والدولار في السوق الموازي والبنك.";
-  const siteKeywords = settingMap["site_keywords"] || "سعر الذهب اليوم, سعر الذهب عيار 21, سعر الذهب في مصر, سعر الفضة, سعر الدولار اليوم, حاسبة الذهب, السوق السوداء";
+  const siteTitle = (settingMap["site_title"] || "جولد مول | أسعار الذهب والعملات اليوم في مصر").replace("سيرفيس", "مول").replace("لايف", "مول");
+
+  // Expanded keywords from user request
+  const defaultKeywords = [
+    "جولد مول", "gold mall", "سعر الذهب اليوم", "سعر جرام الذهب", "سعر الذهب عيار 24", "سعر الذهب عيار 21", "سعر الذهب عيار 18",
+    "سعر الذهب الآن", "أسعار الذهب مباشر", "بورصة الذهب", "سعر أوقية الذهب", "سعر الذهب عالميًا",
+    "سعر الذهب بالدولار", "سعر الذهب بالجنيه المصري", "توقعات أسعار الذهب", "تحليل الذهب اليوم",
+    "شراء الذهب", "بيع الذهب", "الاستثمار في الذهب", "سبائك ذهب", "جنيه ذهب", "مصنعية الذهب",
+    "أفضل وقت لشراء الذهب", "سعر الذهب في مصر", "سعر الذهب في السعودية", "سعر الذهب في الإمارات",
+    "سعر الذهب لحظة بلحثة", "سعر الفضة اليوم", "سعر جرام الفضة", "سعر أوقية الفضة", "سعر الفضة مباشر",
+    "أسعار الفضة الآن", "بورصة الفضة", "الاستثمار في الفضة", "شراء فضة", "بيع فضة", "سبائك فضة",
+    "توقعات أسعار الفضة", "تحليل الفضة", "سعر الفضة بالدولار", "سعر الفضة بالجنيه", "سعر الفضة في مصر",
+    "سعر الفضة عالميًا", "فضة 925", "سعر كيلو الفضة", "الفضة مقابل الذهب", "حركة الفضة اليوم",
+    "سعر الدولار اليوم", "سعر اليورو اليوم", "سعر الريال السعودي", "سعر الدرهم الإماراتي",
+    "أسعار العملات اليوم", "أسعار العملات مقابل الجنيه", "سعر الدولار في البنوك", "سعر الدولار في السوق السوداء",
+    "تحويل عملات", "سعر الصرف اليوم", "سعر الجنيه المصري", "أسعار العملات مباشر", "سعر الدولار لحظة بلحظة",
+    "أسعار العملات الأجنبية", "سعر الدولار الآن", "سعر الدولار في مصر", "سعر اليورو في مصر",
+    "أسعار العملات العالمية", "سعر صرف الدولار", "توقعات الدولار"
+  ];
+
+  const siteDescription = settingMap["site_description"] || "اخر تحديثات وأسعار الذهب والعملات في مصر والعالم. منصة جولد مول تقدم لك بث مباشر لأسعار عيار 21، 24، 18، وأسعار السبائك والدولار في السوق الموازي والبنك. تحليل السوق اليومي وتوقعات الأسعار.";
+  const siteKeywords = settingMap["site_keywords"] || defaultKeywords.join(", ");
 
   return {
     metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://goldservice-egypt.com"),
@@ -42,9 +59,9 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: siteDescription,
     keywords: siteKeywords.split(',').map(k => k.trim()),
-    authors: [{ name: "جولد سيرفيس" }],
-    creator: "Gold Service Team",
-    publisher: "Gold Service",
+    authors: [{ name: "جولد مول" }],
+    creator: "Gold Mall Team",
+    publisher: "Gold Mall",
     alternates: {
       canonical: "/",
     },
@@ -63,7 +80,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: siteTitle,
       description: siteDescription,
       url: "https://goldservice-egypt.com",
-      siteName: "جولد سيرفيس",
+      siteName: "جولد مول",
       locale: "ar_EG",
       type: "website",
       images: [
@@ -82,18 +99,19 @@ export async function generateMetadata(): Promise<Metadata> {
       images: ["https://goldservice-egypt.com/twitter-image.jpg"],
     },
     verification: {
-      google: "google-site-verification-id", // Should be moved to env or settings
+      google: "google2af4c13cbba55876",
     },
     icons: {
-      icon: "/favicon.ico",
-      shortcut: "/favicon.ico",
-      apple: "/apple-touch-icon.png",
+      icon: "/logo.png",
+      shortcut: "/logo.png",
+      apple: "/logo.png",
     },
   };
 }
 
 import { LanguageProvider } from "@/components/language-provider";
 import { MarketDataProvider } from "@/components/market-data-provider";
+import AdBanner from "@/components/ads/ad-banner";
 
 export default function RootLayout({
   children,
@@ -111,7 +129,40 @@ export default function RootLayout({
         >
           <LanguageProvider>
             <MarketDataProvider>
-              {children}
+              <div className="flex flex-col min-h-screen pt-14 min-[320px]:pt-16 uppercase">
+                <div className="w-full flex justify-center py-2 bg-slate-50 dark:bg-[#0B1121] no-print">
+                  <AdBanner type="horizontal" />
+                </div>
+
+                <div className="flex flex-1 relative w-full max-w-[100vw] overflow-x-hidden">
+                  {/* Left Sidebar Ad */}
+                  <aside className="hidden xl:flex flex-col sticky top-20 h-fit ml-4 shrink-0 no-print space-y-4">
+                    <AdBanner type="sidebar" />
+                    <AdBanner type="sidebar" />
+                    <AdBanner type="sidebar" />
+                    <AdBanner type="sidebar" />
+                    <AdBanner type="sidebar" />
+                  </aside>
+
+                  <div className="flex-1 min-w-0 max-w-full lg:max-w-7xl mx-auto">
+                    {children}
+                  </div>
+
+                  {/* Right Sidebar Ad */}
+                  <aside className="hidden xl:flex flex-col sticky top-20 h-fit mr-4 shrink-0 no-print space-y-4">
+                    <AdBanner type="sidebar" />
+                    <AdBanner type="sidebar" />
+                    <AdBanner type="sidebar" />
+                    <AdBanner type="sidebar" />
+                    <AdBanner type="sidebar" />
+                  </aside>
+                </div>
+
+                <div className="w-full flex flex-col items-center gap-6 py-12 bg-slate-50 dark:bg-[#0B1121] border-t border-slate-200 dark:border-white/5 no-print">
+                  <AdBanner type="horizontal" />
+                  <AdBanner type="horizontal" />
+                </div>
+              </div>
             </MarketDataProvider>
           </LanguageProvider>
         </ThemeProvider>

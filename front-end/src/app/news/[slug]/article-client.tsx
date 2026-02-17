@@ -7,6 +7,7 @@ import { Calendar, User, ArrowRight, Share2, Clock, Newspaper, Bell } from "luci
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-provider";
+import AdBanner from "@/components/ads/ad-banner";
 
 
 interface ArticleClientProps {
@@ -129,7 +130,7 @@ export default function ArticleClient({ article: initialArticle, slug }: Article
                                     <User className="h-6 w-6 text-slate-400 dark:text-[#94A3B8]" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-heavy text-slate-900 dark:text-white">{article.author || "فريق تحرير جولد سيرفيس"}</p>
+                                    <p className="text-sm font-heavy text-slate-900 dark:text-white">{article.author || "فريق تحرير جولد مول"}</p>
                                     <p className="text-[10px] font-black text-slate-400 dark:text-[#94A3B8] uppercase tracking-widest mt-0.5">{article.date}</p>
                                 </div>
                             </div>
@@ -144,6 +145,8 @@ export default function ArticleClient({ article: initialArticle, slug }: Article
                                 <Share2 className="h-5 w-5" />
                             </button>
                         </div>
+                        <AdBanner type="horizontal" />
+                        <AdBanner type="native" />
                     </div>
 
                     {/* Featured Image - Grounded */}
@@ -156,6 +159,8 @@ export default function ArticleClient({ article: initialArticle, slug }: Article
                             />
                         </div>
                     )}
+                    <AdBanner type="horizontal" />
+                    <AdBanner type="native" />
 
                     {/* Content Section - Simplified Styles */}
                     <div className="article-content prose prose-slate dark:prose-invert max-w-none 

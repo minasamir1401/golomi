@@ -10,6 +10,7 @@ import { useLanguage } from "@/components/language-provider";
 import { cn } from "@/lib/utils";
 import SilverCalculator from "@/components/silver-calculator";
 import { QASection } from "@/components/qa-section";
+import AdBanner from "@/components/ads/ad-banner";
 
 export default function SilverClient() {
     const { t, locale, isRTL } = useLanguage();
@@ -100,6 +101,9 @@ export default function SilverClient() {
                             </span>
                         </div>
                     )}
+                    <div className="mt-8">
+                        <AdBanner type="horizontal" />
+                    </div>
                 </div>
 
                 {loading ? (
@@ -109,18 +113,24 @@ export default function SilverClient() {
                 ) : (
                     <>
                         {/* Detailed Silver Table */}
-                        <div className="mb-16">
+                        <div className="mb-8">
+                            <div className="space-y-2 mb-4">
+                                <AdBanner type="horizontal" />
+                                <AdBanner type="native" />
+                            </div>
                             <SilverTable data={silverData} />
+                            <AdBanner type="horizontal" />
                         </div>
 
                         {/* Silver Calculator */}
-                        <div className="mb-16">
+                        <div className="mb-8">
                             <SilverCalculator prices={{
                                 silver_999: silverData?.prices?.silver_999_sell ? { buy: silverData.prices.silver_999_buy || 0, sell: silverData.prices.silver_999_sell } : undefined,
                                 silver_925: silverData?.prices?.silver_925_sell ? { buy: silverData.prices.silver_925_buy || 0, sell: silverData.prices.silver_925_sell } : undefined,
                                 silver_900: silverData?.prices?.silver_900_sell ? { buy: silverData.prices.silver_900_buy || 0, sell: silverData.prices.silver_900_sell } : undefined,
                                 silver_800: silverData?.prices?.silver_800_sell ? { buy: silverData.prices.silver_800_buy || 0, sell: silverData.prices.silver_800_sell } : undefined,
                             }} />
+                            <AdBanner type="native" />
                         </div>
 
                         {/* Statistics Section */}

@@ -18,6 +18,7 @@ import { useMarketData } from "@/components/market-data-provider";
 import { cn } from "@/lib/utils";
 import GoldCalculator from "@/components/gold-calculator";
 import { QASection } from "@/components/qa-section";
+import AdBanner from "@/components/ads/ad-banner";
 
 export interface GoldClientProps {
     initialData: any;
@@ -53,16 +54,22 @@ export default function GoldClient({ initialData }: GoldClientProps) {
                     <p className="max-w-xl text-[#161E54]/40 dark:text-[#979DAC] font-bold text-sm sm:text-base leading-relaxed">
                         {t.gold_page.subtitle}
                     </p>
+                    <div className="mt-8">
+                        <AdBanner type="horizontal" />
+                        <AdBanner type="native" />
+                    </div>
                 </div>
             </section>
 
             <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-20">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-16">
-                    <div className="lg:col-span-8 space-y-12">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-8">
+                    <div className="lg:col-span-8 space-y-8">
                         <div className="space-y-8">
                             <h2 className="section-title">{locale === 'ar' ? 'الأسعار في مصر' : 'Prices in Egypt'}</h2>
                             <LiveGoldTable />
                         </div>
+                        <AdBanner type="horizontal" />
+                        <AdBanner type="native" />
 
                         <div className="space-y-8">
                             <h2 className="section-title">{locale === 'ar' ? 'السعر العالمي' : 'Global Price'}</h2>
@@ -76,6 +83,7 @@ export default function GoldClient({ initialData }: GoldClientProps) {
                             <div className="glass-card p-4 sm:p-8">
                                 <HistoricalPriceChart />
                             </div>
+                            <AdBanner type="native" />
                         </div>
                     </div>
 
@@ -131,18 +139,26 @@ export default function GoldClient({ initialData }: GoldClientProps) {
                                     { label: t.gold_page.ounce, price: livePrices?.["gold_ounce"]?.sell || livePrices?.["أوقية الذهب"]?.sell },
                                     { label: t.gold_page.pound, price: livePrices?.["gold_pound"]?.sell || livePrices?.["جنيه الذهب"]?.sell },
                                 ].map((item, i) => (
-                                    <div key={i} className="flex justify-between items-center p-4 rounded-xl bg-slate-50 dark:bg-[#0B1121] border border-slate-100 dark:border-[#1E293B]">
+                                    <div key={i} className="flex justify-between items-center p-4 rounded-xl bg-slate-50 dark:bg-[#0B1121] border border-slate-200 dark:border-[#1E293B]">
                                         <span className="text-xs font-bold text-slate-500 dark:text-[#FFFFFF]">{item.label}</span>
                                         <span className="font-heavy text-slate-900 dark:text-white">{item.price ? new Intl.NumberFormat(locale === 'ar' ? "ar-EG" : "en-US").format(item.price) : "..."}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
+                        <div className="space-y-2">
+                            <AdBanner type="horizontal" />
+                            <AdBanner type="horizontal" />
+                            <AdBanner type="horizontal" />
+                            <AdBanner type="horizontal" />
+                            <AdBanner type="native" />
+                        </div>
                     </div>
                 </div>
 
                 <div className="space-y-12">
                     <h2 className="section-title">{locale === 'ar' ? 'أسعار الذهب عالمياً' : 'Global Gold Prices'}</h2>
+                    <AdBanner type="horizontal" />
                     <CountriesGrid />
                 </div>
 
@@ -164,7 +180,10 @@ export default function GoldClient({ initialData }: GoldClientProps) {
                 </div>
 
                 <div className="mt-16">
+                    <AdBanner type="horizontal" />
+                    <AdBanner type="native" />
                     <QASection pageKey="gold" />
+                    <AdBanner type="horizontal" />
                 </div>
             </main>
         </div>

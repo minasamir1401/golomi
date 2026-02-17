@@ -15,17 +15,23 @@ export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
     const { locale, setLocale, t } = useLanguage();
     const { snapshot } = useMarketData();
-    const [siteTitle, setSiteTitle] = useState({ first: "جولد", second: "سيرفيس" });
+    const [siteTitle, setSiteTitle] = useState({ first: "جولد", second: "مول" });
 
     useEffect(() => {
         if (snapshot?.settings?.site_title) {
             const title = snapshot.settings.site_title;
             const parts = title.split("|")[0].trim().split(" ");
             if (parts.length > 1) {
-                setSiteTitle({ first: parts[0], second: parts.slice(1).join(" ") });
+                // Force "Mall" (مول) if the first word is "Gold" (جولد)
+                const first = parts[0];
+                const second = (first === 'جولد' || first === 'Gold') ? (locale === 'ar' ? 'مول' : 'Mall') : parts.slice(1).join(" ");
+                setSiteTitle({ first, second });
             } else {
                 setSiteTitle({ first: locale === 'ar' ? 'سوق' : 'Market', second: parts[0] });
             }
+        } else {
+            // Default fallback
+            setSiteTitle({ first: "جولد", second: "مول" });
         }
     }, [snapshot, locale]);
 
