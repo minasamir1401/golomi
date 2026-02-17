@@ -1,49 +1,41 @@
-# Backend
-Back-End/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Dependencies
-node_modules/
-venv/
-.next/
-out/
-build/
-dist/
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-.pytest_cache/
+# testing
+/coverage
 
-# Databases
-*.db
-*.sqlite3
+# next.js
+/.next/
+/out/
 
-# Environment Variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# production
+/build
 
-# Debug files
-*.json
-!package.json
-!tsconfig.json
-!next.config.js
-!next.config.ts
-!api_data.json
-!front-end/src/dictionaries/*.json
-!manual_seed.py
-check_api.py
-debug_scraper.py
-debug_db_latest.py
-verify_history.py
-check_db_history.py
-api_output.json
-check_history_db.json
-api_data.json
-
-# OS files
+# misc
 .DS_Store
-Thumbs.db
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
